@@ -1,0 +1,14 @@
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/bin/Debug/net9.0/Consequences
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/bin/Debug/net9.0/Consequences.deps.json
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/bin/Debug/net9.0/Consequences.runtimeconfig.json
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/bin/Debug/net9.0/Consequences.dll
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/bin/Debug/net9.0/Consequences.pdb
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.GeneratedMSBuildEditorConfig.editorconfig
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.AssemblyInfoInputs.cache
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.AssemblyInfo.cs
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.csproj.CoreCompileInputs.cache
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.dll
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/refint/Consequences.dll
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.pdb
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/Consequences.genruntimeconfig.cache
+/Users/brennanbeam/Source/Work/ConsequencesCore/Consequences/obj/Debug/net9.0/ref/Consequences.dll
