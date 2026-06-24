@@ -12,9 +12,6 @@ public class DamageBenchmarks
     [Params(1_000, 100_000)]
     public int StructureCount;
 
-    [Params(10)]
-    public int HazardCount;
-
     private Building[] _buildings = Array.Empty<Building>();
     private Hazard[] _hazards = Array.Empty<Hazard>();
 
@@ -33,6 +30,7 @@ public class DamageBenchmarks
 
         var rng = new Random(42);
         _buildings = new Building[StructureCount];
+        _hazards = new Hazard[StructureCount];
         for (int i = 0; i < StructureCount; i++)
         {
             _buildings[i] = new Building
@@ -46,11 +44,6 @@ public class DamageBenchmarks
                 AbleBodiedPeople = 2,
                 LimitedMobilityPeople = 0,
             };
-        }
-
-        _hazards = new Hazard[HazardCount];
-        for (int i = 0; i < HazardCount; i++)
-        {
             _hazards[i] = new Hazard(
                 depth: rng.NextDouble() * 12.0,
                 velocity: rng.NextDouble() * 5.0,
@@ -67,30 +60,7 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            for (int j = 0; j < hazards.Length; j++)
-            {
-                var components = b.ComputeComponents(hazards[j].Depth, hazards[j].Velocity);
-                total += components.Total;
-            }
-        }
-        return total;
-    }
-
-    [Benchmark]
-    public double Alt1_PerComponentMethods()
-    {
-        double total = 0;
-        var buildings = _buildings;
-        var hazards = _hazards;
-        for (int i = 0; i < buildings.Length; i++)
-        {
-            ref var b = ref buildings[i];
-            for (int j = 0; j < hazards.Length; j++)
-            {
-                double depth = hazards[j].Depth;
-                double velocity = hazards[j].Velocity;
-                total += b.ComputeStructure(depth, velocity) + b.ComputeContent(depth, velocity);
-            }
+            total += b.ComputeComponents(hazards[i].Depth, hazards[i].Velocity).Total;
         }
         return total;
     }
@@ -104,10 +74,7 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            for (int j = 0; j < hazards.Length; j++)
-            {
-                total += b.Compute(hazards[j].Depth, hazards[j].Velocity, out _, out _);
-            }
+            total += b.Compute(hazards[i].Depth, hazards[i].Velocity, out _, out _);
         }
         return total;
     }
@@ -121,12 +88,39 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            for (int j = 0; j < hazards.Length; j++)
-            {
-                b.Compute(hazards[j].Depth, hazards[j].Velocity, out DamageResult result);
-                total += result.Total;
-            }
+            b.Compute(hazards[i].Depth, hazards[i].Velocity, out DamageResult result);
+            total += result.Total;
         }
         return total;
+    }
+
+    [Benchmark]
+    public double Alt5_TotalOnly()
+    {
+        double total = 0;
+        var buildings = _buildings;
+        var hazards = _hazards;
+        for (int i = 0; i < buildings.Length; i++)
+        {
+            ref var b = ref buildings[i];
+            total += b.Compute(hazards[i].Depth, hazards[i].Velocity);
+        }
+        return total;
+    }
+
+    [Benchmark]
+    public double Alt6_BatchedAPI()
+    {
+        double total = 0;
+        var results = BuildingBatch.ComputeBatch(_buildings, _hazards);
+        for (int i = 0; i < results.Length; i++)
+            total += results[i].Total;
+        return total;
+    }
+
+    [Benchmark]
+    public double Alt7_BatchedTotalOnly()
+    {
+        return BuildingBatch.ComputeBatchTotal(_buildings, _hazards);
     }
 }

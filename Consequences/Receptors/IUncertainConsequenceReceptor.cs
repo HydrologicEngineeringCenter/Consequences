@@ -1,6 +1,6 @@
 namespace Consequences.Receptors;
 
-public interface IUncertainConsequenceReceptor
+public interface IUncertainConsequenceReceptor<TResult> where TResult : struct
 {
-    ICoreConsequenceReceptor Sample();
+    ICoreConsequenceReceptor<TResult> Sample();
 }
