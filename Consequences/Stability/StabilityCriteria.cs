@@ -11,7 +11,7 @@ public class StabilityCriteria
         _predicate = predicate;
     }
 
-    public bool Evaluate(IHazard hazard) => _predicate(hazard.Depth, hazard.Velocity);
+    public bool Evaluate(IDepthVelocityHazard hazard) => _predicate(hazard.Depth, hazard.Velocity);
 
     public bool Evaluate(double depth, double velocity) => _predicate(depth, velocity);
 

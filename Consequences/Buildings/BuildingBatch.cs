@@ -10,7 +10,7 @@ public static class BuildingBatch
     // returns it as a Span.
     public static Span<DamageResult> ComputeBatch(
         ReadOnlySpan<Building> buildings,
-        ReadOnlySpan<Hazard> hazards)
+        ReadOnlySpan<DepthVelocity> hazards)
     {
         if (hazards.Length != buildings.Length)
             throw new ArgumentException(
@@ -33,7 +33,7 @@ public static class BuildingBatch
     // folds totals as it walks the parallel arrays.
     public static double ComputeBatchTotal(
         ReadOnlySpan<Building> buildings,
-        ReadOnlySpan<Hazard> hazards)
+        ReadOnlySpan<DepthVelocity> hazards)
     {
         if (hazards.Length != buildings.Length)
             throw new ArgumentException(

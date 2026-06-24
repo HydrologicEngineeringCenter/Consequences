@@ -13,7 +13,7 @@ public class DamageBenchmarks
     public int StructureCount;
 
     private Building[] _buildings = Array.Empty<Building>();
-    private Hazard[] _hazards = Array.Empty<Hazard>();
+    private DepthVelocity[] _hazards = Array.Empty<DepthVelocity>();
 
     private double[] _depths = Array.Empty<double>();
 
@@ -32,7 +32,7 @@ public class DamageBenchmarks
 
         var rng = new Random(42);
         _buildings = new Building[StructureCount];
-        _hazards = new Hazard[StructureCount];
+        _hazards = new DepthVelocity[StructureCount];
         for (int i = 0; i < StructureCount; i++)
         {
             _buildings[i] = new Building
@@ -46,7 +46,7 @@ public class DamageBenchmarks
                 AbleBodiedPeople = 2,
                 LimitedMobilityPeople = 0,
             };
-            _hazards[i] = new Hazard(
+            _hazards[i] = new DepthVelocity(
                 depth: rng.NextDouble() * 12.0,
                 velocity: rng.NextDouble() * 5.0,
                 duration: 1.0);
@@ -83,10 +83,10 @@ public class DamageBenchmarks
     [Benchmark]
     public double Alt2_GenerateHazard()
     {
-        Hazard[] localHazards = new Hazard[StructureCount];
+        DepthVelocity[] localHazards = new DepthVelocity[StructureCount];
         for (int i = 0; i < StructureCount; i++)
         {
-            localHazards[i] = new Hazard(_depths[i],0,0);
+            localHazards[i] = new DepthVelocity(_depths[i],0);
         }
 
         double total = 0;
@@ -102,7 +102,7 @@ public class DamageBenchmarks
     [Benchmark]
     public double Alt3_ReuseHazard()
     {
-        Hazard localHazards = new();
+        DepthVelocity localHazards = new();
 
         double total = 0;
         var buildings = _buildings;
