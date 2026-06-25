@@ -5,7 +5,7 @@ using Consequences.Stability;
 
 namespace Consequences.Buildings;
 
-public struct Building : ICoreConsequenceReceptor<DamageResult>
+public struct Building 
 {
     public required OccupancyType OccupancyType { get; init; }
 
@@ -22,7 +22,7 @@ public struct Building : ICoreConsequenceReceptor<DamageResult>
     public StabilityCriteria? SampledStabilityCriteria { get; init; }
 
     // Alternative 2: single struct return.
-    public static DamageResult ComputeComponents(double depth, Building building)
+    public static DamageResult Compute(double depth, Building building)
     {
         var occ = building.OccupancyType;
         double effectiveDepth = depth - building.FoundationHeight - building.OccupancyType.FoundationHeightOffset;
@@ -35,7 +35,7 @@ public struct Building : ICoreConsequenceReceptor<DamageResult>
             contentValue * occ.ContentDamageFunction(effectiveDepth));
     }
 
-    public static DamageResult ComputeComponents(double depth, double velocity, Building building)  {
+    public static DamageResult Compute(double depth, double velocity, Building building)  {
         var occ = building.OccupancyType;
         double effectiveDepth = depth - building.FoundationHeight - building.OccupancyType.FoundationHeightOffset;
 
@@ -47,68 +47,10 @@ public struct Building : ICoreConsequenceReceptor<DamageResult>
             contentValue * occ.ContentDamageFunction(effectiveDepth));
     }
 
-    public readonly DamageResult ComputeComponents(double depth) => ComputeComponents(depth, this);
+    public readonly DamageResult Compute<THazard>(THazard hazard) where THazard : IDepthHazard =>
+        Compute(hazard.Depth, this);
 
-    public readonly DamageResult ComputeComponents(double depth, double velocity) => ComputeComponents(depth, velocity, this);
-
-    public readonly DamageResult ComputeComponents<THazard>(THazard hazard) where THazard : IDepthVelocityHazard =>
-        ComputeComponents(hazard.Depth, hazard.Velocity, this);
-
-       public readonly DamageResult ComputeComponentsConcrete(DepthVelocity hazard)
-    {
-        var occ = OccupancyType;
-        double effectiveDepth = hazard.Depth - FoundationHeight - OccupancyType.FoundationHeightOffset;
-
-        double structureValue = Value * occ.StructureValuePercentageOfTheMean;
-        double contentValue = ContentValue * occ.ContentValuePercentageOfTheMean;
-
-        return new DamageResult(
-            structureValue * occ.StructureDamageFunction(effectiveDepth),
-            contentValue * occ.ContentDamageFunction(effectiveDepth));
-    }
-
-
-    // Alternative 3: out parameters per component, total as return value.
-    public readonly double Compute(double depth, out double content, out double structure)
-    {
-        var occ = OccupancyType;
-        double effectiveDepth = depth - FoundationHeight - OccupancyType.FoundationHeightOffset;
-
-        double structureValue = Value * occ.StructureValuePercentageOfTheMean;
-        double contentValue = ContentValue * occ.ContentValuePercentageOfTheMean;
-
-        structure = structureValue * occ.StructureDamageFunction(effectiveDepth);
-        content = contentValue * occ.ContentDamageFunction(effectiveDepth);
-        return structure + content;
-    }
-
-    public readonly double Compute(double depth, double velocity, out double content, out double structure) =>
-        Compute(depth, out content, out structure);
-
-    public readonly double Compute<THazard>(THazard hazard, out double content, out double structure) where THazard : IDepthVelocityHazard =>
-        Compute(hazard.Depth, hazard.Velocity, out content, out structure);
-
-    // Alternative 4: caller-allocated DamageResult filled via out parameter.
-    public readonly void Compute(double depth, out DamageResult result)
-    {
-        var occ = OccupancyType;
-        double effectiveDepth = depth - FoundationHeight - OccupancyType.FoundationHeightOffset;
-
-        double structureValue = Value * occ.StructureValuePercentageOfTheMean;
-        double contentValue = ContentValue * occ.ContentValuePercentageOfTheMean;
-
-        result = new DamageResult(
-            structureValue * occ.StructureDamageFunction(effectiveDepth),
-            contentValue * occ.ContentDamageFunction(effectiveDepth));
-    }
-
-    public readonly void Compute(double depth, double velocity, out DamageResult result) =>
-        Compute(depth, out result);
-
-    public readonly void Compute<THazard>(THazard hazard, out DamageResult result) where THazard : IDepthVelocityHazard =>
-        Compute(hazard.Depth, hazard.Velocity, out result);
-
-    // Alternative 5: total only, no components surfaced.
+    // Alternative 5: total only, no components surfaced ****Fastest possible. 
     public readonly double Compute(double depth)
     {
         var occ = OccupancyType;
@@ -120,7 +62,4 @@ public struct Building : ICoreConsequenceReceptor<DamageResult>
         return structureValue * occ.StructureDamageFunction(effectiveDepth)
              + contentValue * occ.ContentDamageFunction(effectiveDepth);
     }
-
-    public readonly double Compute(double depth, double velocity) => Compute(depth);
-    public readonly double Compute<THazard>(THazard hazard) where THazard : IDepthVelocityHazard => Compute(hazard.Depth, hazard.Velocity);
 }

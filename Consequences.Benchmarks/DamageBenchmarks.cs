@@ -73,7 +73,7 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            total += b.ComputeComponents(_depths[i]).Total;
+            total += b.Compute(_depths[i]);
         }
         return total;
     }
@@ -82,10 +82,10 @@ public class DamageBenchmarks
     [Benchmark]
     public double Alt2_GenerateHazard()
     {
-        DepthVelocity[] localHazards = new DepthVelocity[StructureCount];
+        DepthHazard[] localHazards = new DepthHazard[StructureCount];
         for (int i = 0; i < StructureCount; i++)
         {
-            localHazards[i] = new DepthVelocity(_depths[i],0);
+            localHazards[i] = new DepthHazard(_depths[i]);
         }
 
         double total = 0;
@@ -93,7 +93,7 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            total += b.ComputeComponents(localHazards[i]).Total;
+            total += b.Compute(localHazards[i]).Total;
         }
         return total;
     }
@@ -109,7 +109,7 @@ public class DamageBenchmarks
         {
             ref var b = ref buildings[i];
             localHazards.Depth = _depths[i];
-            total += b.ComputeComponents(localHazards).Total;
+            total += b.Compute(localHazards).Total;
         }
         return total;
     }
