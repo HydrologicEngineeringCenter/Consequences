@@ -84,6 +84,5 @@ public class InterfaceVsGenericBenchmarks
 
     private static double Generic<T>(T s) where T : ISample => s.A * 2.0 + s.B;
 
-    private static double IDoStuff(double a, double b) => a + b
     private static double Interface(ISample s) => s.A * 2.0 + s.B;
 }

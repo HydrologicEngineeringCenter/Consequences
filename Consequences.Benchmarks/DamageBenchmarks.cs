@@ -48,8 +48,7 @@ public class DamageBenchmarks
             };
             _hazards[i] = new DepthVelocity(
                 depth: rng.NextDouble() * 12.0,
-                velocity: rng.NextDouble() * 5.0,
-                duration: 1.0);
+                velocity: rng.NextDouble() * 5.0);
         }
         _depths = DoSampling();
     }
@@ -94,7 +93,7 @@ public class DamageBenchmarks
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            total += b.ComputeComponentsGenerics(localHazards[i]).Total;
+            total += b.ComputeComponents(localHazards[i]).Total;
         }
         return total;
     }
@@ -110,7 +109,7 @@ public class DamageBenchmarks
         {
             ref var b = ref buildings[i];
             localHazards.Depth = _depths[i];
-            total += b.ComputeComponentsGenerics(localHazards).Total;
+            total += b.ComputeComponents(localHazards).Total;
         }
         return total;
     }
