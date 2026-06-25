@@ -7,7 +7,7 @@ using Numerics.Data;
 namespace Consequences.Benchmarks;
 
 [MemoryDiagnoser]
-public class DamageBenchmarks
+public class OccupancyTypeExplore
 {
     [Params(1_000, 100_000)]
     public int StructureCount;
@@ -19,7 +19,6 @@ public class DamageBenchmarks
 
     private DepthHazard[] _depthHazards = Array.Empty<DepthHazard>();
     private DepthVelocity[] _depthVelocityHazards = Array.Empty<DepthVelocity>();
-    private HydraulicTimeSeries[] _timeSeriesHazards = Array.Empty<HydraulicTimeSeries>();
 
     [GlobalSetup]
     public void Setup()
@@ -47,7 +46,6 @@ public class DamageBenchmarks
         _velocities = new float[StructureCount];
         _depthHazards = new DepthHazard[StructureCount];
         _depthVelocityHazards = new DepthVelocity[StructureCount];
-        _timeSeriesHazards = new HydraulicTimeSeries[StructureCount];
 
         for (int i = 0; i < StructureCount; i++)
         {
@@ -70,50 +68,12 @@ public class DamageBenchmarks
 
             _depthHazards[i] = new DepthHazard(depth);
             _depthVelocityHazards[i] = new DepthVelocity(depth, velocity);
-            _timeSeriesHazards[i] = BuildTimeSeries(depth, velocity);
         }
     }
-
-    private static HydraulicTimeSeries BuildTimeSeries(float peakDepth, float peakVelocity)
-    {
-        // Triangular rise-and-fall whose peak matches the scalar base data,
-        // so all hazard types resolve to the same Depth/Velocity values.
-        float[] times = { 0f, 30f, 60f, 90f, 120f };
-        float[] depths = { 0f, peakDepth * 0.5f, peakDepth, peakDepth * 0.5f, 0f };
-        float[] velocities = { 0f, peakVelocity * 0.5f, peakVelocity, peakVelocity * 0.5f, 0f };
-        return new HydraulicTimeSeries(times, depths, velocities, pointReductionTolerance: 0.001f);
-    }
+    
 
     [Benchmark(Baseline = true)]
-    public float Depth_Primitive()
-    {
-        float total = 0;
-        var buildings = _buildings;
-        var depths = _depths;
-        for (int i = 0; i < buildings.Length; i++)
-        {
-            ref var b = ref buildings[i];
-            total += Building.ComputeMetal(depths[i],b);
-        }
-        return total;
-    }
-
-    [Benchmark]
-    public float DepthHazard_Struct()
-    {
-        float total = 0;
-        var buildings = _buildings;
-        var hazards = _depthHazards;
-        for (int i = 0; i < buildings.Length; i++)
-        {
-            ref var b = ref buildings[i];
-            total += b.Compute(hazards[i]).Total;
-        }
-        return total;
-    }
-
-    [Benchmark]
-    public float DepthVelocityHazard_Struct()
+    public float DepthVelocityHazard_Func()
     {
         float total = 0;
         var buildings = _buildings;
@@ -127,16 +87,18 @@ public class DamageBenchmarks
     }
 
     [Benchmark]
-    public float HydraulicTimeSeriesHazard_Class()
+    public float DepthVelocityHazard_Ordinate()
     {
         float total = 0;
         var buildings = _buildings;
-        var hazards = _timeSeriesHazards;
+        var hazards = _depthVelocityHazards;
         for (int i = 0; i < buildings.Length; i++)
         {
             ref var b = ref buildings[i];
-            total += b.Compute(hazards[i]).Total;
+            total += b.ComputeOrdinate(hazards[i]).Total;
         }
         return total;
     }
+
+
 }

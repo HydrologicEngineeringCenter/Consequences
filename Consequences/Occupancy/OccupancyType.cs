@@ -1,3 +1,5 @@
+using Numerics.Data;
+
 namespace Consequences.Occupancy;
 
 public class OccupancyType
@@ -11,4 +13,12 @@ public class OccupancyType
 
     public float StructureValuePercentageOfTheMean { get; init; } = 1.0f;
     public float ContentValuePercentageOfTheMean { get; init; } = 1.0f;
+
+
+
+
+    //ALTERNATIVE
+
+    public required OrderedPairedData StructureDamageFunctionOrdinates { get; init; }
+    public required OrderedPairedData ContentDamageFunctionOrdinates { get; init; }
 }

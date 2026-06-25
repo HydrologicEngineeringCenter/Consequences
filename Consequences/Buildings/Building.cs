@@ -58,6 +58,26 @@ public struct Building
             contentValue * occ.ContentDamageFunction(effectiveDepth));
     }
 
+    //TEMP
+    public DamageResult ComputeOrdinate(DepthVelocity depthVelocity) => ComputeOrdinate(depthVelocity.Depth, depthVelocity.Velocity, this);
+
+        public static DamageResult ComputeOrdinate(float depth, float velocity, Building building)
+    {
+        var occ = building.OccupancyType;
+        float effectiveDepth = depth - building.FoundationHeight - building.OccupancyType.FoundationHeightOffset;
+        if (effectiveDepth <= 0)
+            return new(0, 0);
+        float structureValue = building.Value * occ.StructureValuePercentageOfTheMean;
+        float contentValue = building.ContentValue * occ.ContentValuePercentageOfTheMean;
+        if (building.SampledStabilityCriteria != null && building.SampledStabilityCriteria.Collapsed(depth, velocity, building.FoundationHeight))
+        {
+            return new DamageResult(structureValue, contentValue);
+        }
+        return new DamageResult(
+            structureValue * (float)occ.StructureDamageFunctionOrdinates.GetYFromX(effectiveDepth),
+            contentValue * (float)occ.ContentDamageFunctionOrdinates.GetYFromX(effectiveDepth));
+    }
+
     //This is our bare metal baseline. don't delete
     public static float ComputeMetal(float depth, Building building)
     {
