@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Consequences computation library for life-loss and economic damage simulations — buildings, occupancy types, hydraulic hazards, stability criteria, and evacuation modeling.</PackageDescription>
   </PropertyGroup>
 
 </Project>

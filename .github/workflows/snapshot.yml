@@ -1,0 +1,22 @@
+name: Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'LICENSE.txt'
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      packages: write
+    uses: HydrologicEngineeringCenter/dotnet-workflows/.github/workflows/snapshot.yml@main
+    with:
+      project-names: Consequences
+      version: '0.1.0'
+      nuget-source: https://nuget.pkg.github.com/HydrologicEngineeringCenter/index.json
+    secrets:
+      NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}

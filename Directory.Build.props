@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!-- ====== Common build settings ====== -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+
+    <!-- ContinuousIntegrationBuild strips local file paths from PDBs (required for reproducible-build health check). -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Local-debug version. CI workflows override this at pack time via /p:Version=... -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix Condition="'$(Configuration)' == 'Debug'">localdev</VersionSuffix>
+  </PropertyGroup>
+
+  <!-- ====== Packaging metadata (inherited by every project; opt out with IsPackable=false) ====== -->
+  <PropertyGroup>
+    <Title>USACE.$(MSBuildProjectName)</Title>
+    <PackageId>USACE.$(MSBuildProjectName)</PackageId>
+    <Authors>US Army Corps of Engineers Hydrologic Engineering Center</Authors>
+    <Company>US Army Corps of Engineers</Company>
+    <Copyright>© US Army Corps of Engineers</Copyright>
+    <PackageTags>USACE;HEC;Consequences;LifeLoss;Flood;Damage</PackageTags>
+
+    <PackageProjectUrl>https://github.com/HydrologicEngineeringCenter/Consequences</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/HydrologicEngineeringCenter/Consequences</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryCommit>$(SourceRevisionId)</RepositoryCommit>
+
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageReadmeFile>NuGet_README.md</PackageReadmeFile>
+
+    <PackageOutputPath>$(MSBuildThisFileDirectory)packages</PackageOutputPath>
+  </PropertyGroup>
+
+  <!-- ====== SourceLink / symbols / docs ====== -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Suppress missing-XML-doc warnings until public API docs are filled in. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- ====== Packed support files ====== -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE.txt"     Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)NuGet_README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!-- ====== Conditional icon — auto-packs when icon.png is dropped at repo root ====== -->
+  <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)icon.png')">
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)icon.png')">
+    <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!-- ====== SourceLink (does not flow to consumers) ====== -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

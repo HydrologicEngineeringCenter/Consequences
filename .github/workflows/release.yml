@@ -1,0 +1,17 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      packages: write
+    uses: HydrologicEngineeringCenter/dotnet-workflows/.github/workflows/release.yml@main
+    with:
+      project-names: Consequences
+      nuget-source: https://nuget.pkg.github.com/HydrologicEngineeringCenter/index.json
+    secrets:
+      NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
