@@ -2,7 +2,7 @@ namespace Consequences.Receptors;
 
 public readonly record struct DamageResult(
     float Structure,
-    float Content)
+    float Content) : IConsequenceResult
 {
     public const int ComponentCount = 2;
 

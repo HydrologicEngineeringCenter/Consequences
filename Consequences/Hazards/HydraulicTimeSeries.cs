@@ -315,7 +315,7 @@ public class HydraulicTimeSeries:IHydraulicTimeseriesHazard
     /// <summary>
     /// Get the first occurrence in time where a given depth value is exceeded.
     /// </summary>
-    /// <param name="depthValue">The depth value to search for exceedance.</param>
+    /// <param name="depthThreshold">The depth value to search for exceedance.</param>
     /// <returns></returns>
     public float GetDurationMinutes(float depthThreshold)
     {

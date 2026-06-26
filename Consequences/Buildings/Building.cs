@@ -5,7 +5,7 @@ using Consequences.Stability;
 
 namespace Consequences.Buildings;
 
-public struct Building
+public struct Building : IConsequenceReceptor<DepthHazard, DamageResult>
 {
     public required OccupancyType OccupancyType { get; init; }
 

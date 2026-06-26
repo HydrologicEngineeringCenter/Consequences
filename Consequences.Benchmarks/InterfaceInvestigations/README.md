@@ -10,10 +10,11 @@ The benchmarks vary in *what the abstraction exposes*:
 
 | File | Interface shape | What we're measuring |
 |---|---|---|
-| `InterfaceVsGenericBenchmarks.cs` | `ISample` exposes `A`/`B` properties | Baseline: a "normal" small interface |
-| `MarkerInterfaceVsGenericBenchmarks.cs` | `ISample` is empty (marker) | Does emptying the interface change anything? |
-| `ComputerInterfaceBenchmarks.cs` | `IComputer.Compute(IInput) -> IOutput`, both markers | What if the interface method takes/returns *other* interfaces? |
-| `GenericComputerInterfaceBenchmarks.cs` | `IComputer<TIn, TOut>` with concrete struct args | Does making the interface itself generic fix it? |
+| `0_InterfaceVsGenericBenchmarks.cs` | `ISample` exposes `A`/`B` properties | Baseline: a "normal" small interface |
+| `1_MarkerInterfaceVsGenericBenchmarks.cs` | `ISample` is empty (marker) | Does emptying the interface change anything? |
+| `2_ComputerInterfaceBenchmarks.cs` | `IComputer.Compute(IInput) -> IOutput`, both markers | What if the interface method takes/returns *other* interfaces? |
+| `3_GenericComputerInterfaceBenchmarks.cs` | `IComputer<TIn, TOut>` with concrete struct args | Does making the interface itself generic fix it? |
+| `4_BuildingGenericComputerBenchmarks.cs` | `IConsequenceReceptor<THazard, TResult>` on real `Building` / `DepthHazard` / `DamageResult` | Does the pattern survive on real production types whose `Compute` does actual work? |
 
 Each file runs the same three benchmarks:
 
@@ -111,11 +112,47 @@ A couple of caveats worth keeping in mind:
   guarded-devirtualized. The hard rule is narrower: **interface-typed
   parameters/returns of value types always box**.
 
+## Production-types validation (Apple M4, .NET 9.0.8, 2026-06-26)
+
+The toy benchmarks above use a one-multiply `Compute` body. To check whether
+the result still holds when `Compute` does real work, `BuildingGenericComputerBenchmarks`
+applies the same three call shapes to the actual production types:
+
+- Receptor: `Building` (struct) implementing `IConsequenceReceptor<DepthHazard, DamageResult>`
+- Input: `DepthHazard` (struct, marker `IHazard`)
+- Output: `DamageResult` (readonly record struct, marker `IConsequenceResult`)
+
+Each `Compute` call does a foundation-height subtraction, two value scalings,
+and two `OrderedPairedData.GetYFromX` linear-interpolation lookups against
+depth-damage curves — roughly 12 ns of real work per call at N=100k.
+
+| Method       | N      | Mean         | Ratio | Allocated |
+|--------------|--------|-------------:|------:|----------:|
+| ViaConcrete  |  1,000 |     9.100 µs |  1.00 |         - |
+| ViaGeneric   |  1,000 |     9.113 µs |  1.00 |         - |
+| ViaInterface |  1,000 |     9.276 µs |  1.02 |         - |
+| ViaConcrete  | 100,000 | 1,166.5 µs |  1.00 |         - |
+| ViaGeneric   | 100,000 | 1,182.2 µs |  1.01 |         - |
+| ViaInterface | 100,000 | 1,195.2 µs |  1.02 |         - |
+
+Verdict: the pattern holds. All three call shapes land within 2% of each
+other, and every row allocates nothing. The 1–2% gap on `ViaInterface`
+(roughly 0.3 ns per call) is consistent with a single residual interface
+dispatch on `Compute`; with the receptor held as the generic interface, the
+struct boxes *once* at assignment and is then called per-element through that
+single dispatch — payload (`DepthHazard` / `DamageResult`) never boxes because
+`THazard` / `TResult` are concrete in the signature.
+
+The architectural read: exposing `IConsequenceReceptor<THazard, TResult>` as
+the public abstraction does *not* impose a per-call cost on a realistic
+domain method. The boxing failure mode demonstrated by `ComputerInterface`
+(method takes `IInput` / returns `IOutput`) does not appear here because the
+hazard and result types ride through the signature as their concrete value
+types. Generic interfaces with constrained struct parameters are safe to
+adopt at the project's computation boundaries.
+
 ## Things worth investigating next
 
-- **Real call-site shape** — translate this back to `Building.ComputeComponents`
-  and verify the win is on the same order. Microbenchmarks can mislead when
-  the surrounding work dominates; this is the highest-value follow-up.
 - **Validate the `GenericComputerInterface.ViaInterface` result.** Add
   `[MethodImpl(MethodImplOptions.NoInlining)]` to `Computer.Compute` and a
   sink (e.g. `Volatile.Write`) on `total`. If the ratio stays ~1.0x, the
