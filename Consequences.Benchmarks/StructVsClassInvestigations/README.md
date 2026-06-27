@@ -19,7 +19,8 @@ both implementations.
 | File | What it measures |
 |---|---|
 | `0_StructVsClassBenchmarks.cs` | Toy `SampleStruct` vs. `SampleClass` with a one-multiply body. Isolates dispatch cost from per-call work — the place struct-vs-class differences are most visible. |
-| `1_BuildingStructVsClassBenchmarks.cs` | Production types: `Building` (struct) vs. `BuildingClass` (class), both implementing `IConsequenceReceptor<DepthHazard, DamageResult>`, with the real `Compute` body (foundation offset, value scaling, two `OrderedPairedData.GetYFromX` lookups). |
+| `1_BuildingStructVsClassBenchmarks.cs` | Production types: `Building` (struct) vs. `BuildingClass` (class), both implementing `IConsequenceReceptor<DepthHazard, DamageResult>`, with the real `Compute` body. Single receptor reused per call — stresses the hazard stream, not the receptor layout. |
+| `2_BuildingArrayStructVsClassBenchmarks.cs` | Same production types and call shapes as #1, but holds `Building[N]` / `BuildingClass[N]` and walks one element per hazard. Designed to expose the dense-vs-sparse cache cliff that #1 could not. |
 
 Each file runs six methods: `ViaConcreteStruct`, `ViaGenericStruct`,
 `ViaInterfaceStruct`, `ViaConcreteClass`, `ViaGenericClass`,
@@ -60,6 +61,24 @@ sample array past M4's 16 MB perf-core L2.
 | ViaInterfaceClass  |   9.514 µs  (1.04) |   1,232.3 µs  (1.04) |   128,471 µs  (1.06)    |
 
 All paths in the production benchmark allocate nothing at every N.
+
+### Receptor-array benchmark (`2_BuildingArrayStructVsClassBenchmarks`)
+
+This benchmark replaces the single reused receptor with `Building[N]` /
+`BuildingClass[N]`, so the receptor itself contributes to the working set.
+At N=10M that's ~400 MB dense (struct array) vs. ~640 MB sparse (class
+references + heap objects), both deep into main memory.
+
+| Method             | N = 1k          | N = 100k         | N = 10M (receptor array past L2) |
+|--------------------|----------------:|-----------------:|---------------------------------:|
+| ViaConcreteStruct  |  10.164 µs  (1.00) |   1,270.3 µs  (1.00) |   129,466 µs  (1.00) |
+| ViaGenericStruct   |   9.690 µs  (0.95) |   1,272.3 µs  (1.00) |   129,704 µs  (1.00) |
+| ViaInterfaceStruct |   9.839 µs  (0.97) |   1,269.4 µs  (1.00) |   130,632 µs  (1.01) |
+| ViaConcreteClass   |  10.283 µs  (1.01) |   1,290.6 µs  (1.02) |   130,412 µs  (1.01) |
+| ViaGenericClass    |  10.202 µs  (1.00) |   1,293.3 µs  (1.02) |   133,429 µs  (1.03) |
+| ViaInterfaceClass  |  10.194 µs  (1.00) |   1,262.2 µs  (0.99) |   131,515 µs  (1.02) |
+
+All paths allocate nothing per op at every N.
 
 ## What happened
 
@@ -115,27 +134,34 @@ consistent with virtual dispatch on a class instance being slightly harder
 for PGO to guard-devirtualize than dispatch through a single boxed struct
 (where there is exactly one reference identity in the entire program).
 
-**L2-pressure regime (N = 10M).** Both benchmarks were extended to N=10M to
-push working sets past M4's 16 MB perf-core L2:
+**L2-pressure regime (N = 10M).** All three benchmarks were extended to
+N=10M to push working sets past M4's 16 MB perf-core L2:
 
 - Toy: `SampleStruct[10M]` = 80 MB dense; `SampleClass[10M]` = 80 MB of refs
   plus ~320 MB of heap objects. Both well over L2.
-- Production: `DepthHazard[10M]` = 40 MB hazard stream. Over L2 by ~2.5x.
+- Production (`#1`): `DepthHazard[10M]` = 40 MB hazard stream. Over L2 by
+  ~2.5x. Receptor itself was a single hot instance.
+- Receptor array (`#2`): `Building[10M]` ≈ 400 MB dense; `BuildingClass[10M]`
+  ≈ 640 MB sparse (refs + heap objects). The receptor itself now
+  contributes to the working set. This is the variant the previous round
+  flagged as missing.
 
-Across both benchmarks **every ratio at N=10M is within ~1% of the ratio at
-N=100k**. The dense-struct-array-vs-array-of-references cache cliff did not
-materialize. Reasons:
+Across all three benchmarks **every ratio at N=10M is within ~3% of the
+ratio at N=100k**. The dense-struct-array-vs-array-of-references cache
+cliff did not materialize, even in the receptor-array variant where it had
+the strongest opportunity to. Reasons:
 
-1. **Sequential access.** Both benchmarks walk arrays front-to-back with
+1. **Sequential access.** All benchmarks walk arrays front-to-back with
    unit stride. The hardware prefetcher walks ahead of the demand load, so
    L2/L3 misses are serviced before they can stall the pipeline.
-2. **Allocation locality.** `SampleClass` instances are allocated
-   back-to-back during `Setup`, so the GC's bump allocator packs them in
-   consecutive heap pages. The "sparse" array-of-references is, in
+2. **Allocation locality.** `SampleClass` / `BuildingClass` instances are
+   allocated back-to-back during `Setup`, so the GC's bump allocator packs
+   them in consecutive heap pages. The "sparse" array-of-references is, in
    practice, almost as cache-coherent as the dense struct array on the
    first walk.
-3. **Body large enough to amortize.** Even the toy benchmark's one-multiply
-   body is enough work per element for the prefetcher to keep up.
+3. **Body large enough to amortize.** ~13 ns of per-call work (curve
+   interpolation + value scaling) gives the prefetcher all the runway it
+   needs. The walk is memory-touched, not memory-*bound*.
 
 What N=10M *did* expose:
 
@@ -143,16 +169,16 @@ What N=10M *did* expose:
   The GC absorbs it (no extra latency vs. N=100k after normalizing by N),
   but as an absolute number it's striking — the per-call box is real, it's
   just normally short enough for Gen0 to collect before it shows up.
-- The production benchmark scales perfectly linearly from N=100k to N=10M
-  (1.18 ms → 121 ms is exactly 100x). The per-call cost did not grow as the
-  hazard stream spilled out of cache.
+- The production benchmarks scale perfectly linearly from N=100k to N=10M.
+  Per-call cost did not grow as either the hazard stream or the receptor
+  array spilled out of cache.
 
-The class array would punish struct semantics if the loop accessed elements
-**randomly**, or if the per-element work were small enough that miss latency
-dominated, or if heap fragmentation broke the consecutive-allocation
-assumption. None of those are this codebase's workload. See "Things worth
-investigating next" for the experiment that would actually trigger that
-cliff.
+To actually trigger the cliff would require one of: (a) random or strided
+access that defeats the prefetcher, (b) a per-element body so small that
+miss latency dominates total time, or (c) per-instance data large enough to
+thrash regardless of layout. For Building's real workload, none of those
+hold — the struct-vs-class choice is performance-neutral and the random-
+access variant is the next test if we want to push further.
 
 ## Conclusion
 
@@ -184,23 +210,27 @@ applies, so the struct stays.
 
 ## Things worth investigating next
 
-- **Receptor-array benchmark.** The current production benchmark reuses one
-  `Building` / `BuildingClass` instance per run, so cache pressure on the
-  receptor itself is never measured. Add a variant that holds
-  `Building[10M]` vs. `BuildingClass[10M]` and walks one element per hazard.
-  This is the test that would actually trigger the dense-vs-sparse layout
-  gap that N=10M on the hazard stream did not.
-- **Random-access receptor array.** Same as above, but indexed by a
-  shuffled index array. Defeats the hardware prefetcher and isolates the
-  pointer-chase cost of array-of-references.
+- **Random-access receptor array.** Same setup as
+  `2_BuildingArrayStructVsClassBenchmarks`, but the loop indexes through a
+  shuffled index array instead of walking sequentially. Defeats the
+  hardware prefetcher and isolates the pointer-chase cost of
+  array-of-references. This is the test most likely to actually surface
+  the dense-vs-sparse gap; the sequential variant came back flat.
+- **Smaller per-call body.** Replace `OrderedPairedData.GetYFromX` with a
+  trivial scaling so the per-element work drops from ~13 ns to ~1 ns.
+  Should make memory-miss latency dominant and let the layout difference
+  show. Conversely, useful as a sanity check that the flat result in #2
+  really is "compute-bound, prefetcher hides it" and not "JIT is
+  optimizing the difference away."
 - **`sealed class BuildingClass`.** Should reliably nudge PGO into
   unconditional devirtualization on the `ViaInterfaceClass` path.
   Quantifies the "PGO can't lock in" theory for the ~4–6% gap on
-  `ViaInterfaceClass` in both benchmarks.
+  `ViaInterfaceClass` in `1_BuildingStructVsClassBenchmarks`.
 - **Mixed array.** A loop holding `IConsequenceReceptor<...>[]` where some
   entries are `Building` (boxed) and others are `BuildingClass` (already
   heap). Tests whether the polymorphic call site degrades both paths
-  together.
+  together — PGO can guard-devirtualize one implementation but probably
+  not two.
 - **`readonly struct` vs. `struct`.** `Building` is currently `struct` (not
   `readonly struct`). Switching it typically lets the JIT skip defensive
   copies on property reads in `in`-parameter scenarios. Worth a
