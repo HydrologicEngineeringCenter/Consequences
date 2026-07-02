@@ -37,7 +37,7 @@ float total = damage.Total;
 
 ## License
 
-Distributed under the terms of the MIT-style license shipped in this package (`LICENSE.txt`). Copyright US Army Corps of Engineers Hydrologic Engineering Center.
+Distributed under the terms of the Zero-Clause BSD (0BSD) license shipped in this package (`LICENSE.txt`). Copyright US Army Corps of Engineers Hydrologic Engineering Center.
 
 ## Source
 
