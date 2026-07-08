@@ -6,4 +6,5 @@
   </Configurations>
   <Project Path="Consequences.Benchmarks/Consequences.Benchmarks.csproj" />
   <Project Path="Consequences/Consequences.csproj" />
+  <Project Path="Tools/OccTypeComparison/OccTypeComparison.csproj" />
 </Solution>

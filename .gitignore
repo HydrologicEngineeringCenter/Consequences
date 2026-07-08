@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# OccTypeComparison generated outputs
+Tools/OccTypeComparison/output/
