@@ -3,10 +3,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using OccTypeComparison;
 
-// Defaults; override with --sqlite <path> --json <path> --out <dir>
+// Defaults; override with --sqlite <path> --json <path> --out <dir>.
+// --emit-defaults <path.cs> generates OccupancyTypeDefaults from the FIA source instead of comparing.
 string sqlitePath = @"E:\Occupancy Type Defaults.sqlite";
 string jsonPath = Path.Combine(AppContext.BaseDirectory, "data", "occtypes.json");
 string outputDir = Path.Combine(FindProjectDir(), "output");
+string? emitDefaultsPath = null;
 
 for (int i = 0; i < args.Length - 1; i++)
 {
@@ -15,6 +17,7 @@ for (int i = 0; i < args.Length - 1; i++)
         case "--sqlite": sqlitePath = args[++i]; break;
         case "--json": jsonPath = args[++i]; break;
         case "--out": outputDir = args[++i]; break;
+        case "--emit-defaults": emitDefaultsPath = args[++i]; break;
     }
 }
 
@@ -23,6 +26,15 @@ if (!File.Exists(sqlitePath))
     Console.Error.WriteLine($"SQLite database not found: {sqlitePath} (pass --sqlite <path>)");
     return 1;
 }
+
+if (emitDefaultsPath is not null)
+{
+    List<CanonicalOccType> acceptedTypes = SqliteReader.Read(sqlitePath);
+    File.WriteAllText(emitDefaultsPath, DefaultsGenerator.Generate(acceptedTypes));
+    Console.WriteLine($"Wrote {acceptedTypes.Count} default occupancy types to {emitDefaultsPath}");
+    return 0;
+}
+
 if (!File.Exists(jsonPath))
 {
     Console.Error.WriteLine($"occtypes.json not found: {jsonPath} (pass --json <path>)");

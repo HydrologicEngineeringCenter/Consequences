@@ -23,6 +23,16 @@ Outputs to `Tools/OccTypeComparison/output/` (gitignored):
   attribute inventory, and overlaid structure/contents depth-damage curves per shared
   occupancy type, sorted most-divergent first.
 
+## Generating the Core defaults
+
+```
+dotnet run --project Tools/OccTypeComparison -- --emit-defaults Consequences/Occupancy/OccupancyTypeDefaults.cs
+```
+
+Regenerates `OccupancyTypeDefaults.GetDefaults()` in the Consequences library from the
+accepted HEC-FIA source (curve y-values converted from percent to fractions). Output is
+deterministic; the generated file is committed.
+
 ## Results
 
 `results/` holds the committed outputs of the 2026-07-08 run and `results/DECISION.md`,
