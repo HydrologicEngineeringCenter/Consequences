@@ -17,4 +17,9 @@ public class OccupancyType
     public bool CollectivelyWarned { get; init; } 
     public bool CollectivelyMobilize {get; init;}
 
+    public byte VehicleOccupancyRate { get; init; } = 2;
+
+    public float FromFloorDepthThreshold { get; init; }
+    public float FromCeilingDepthThreshold { get; init; }
+
 }

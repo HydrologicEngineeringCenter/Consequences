@@ -160,8 +160,7 @@ public class BuildingArrayStructVsClassBenchmarks
                 OccupancyType = occupancy,
                 Value = value,
                 ContentValue = content,
-                FoundationHeight = foundation,
-                NumStories = 1,
+                FoundationHeight = foundation
             };
             _buildingStructs[i] = s;
             _structAsInterface[i] = s; // boxes once, here, into the array slot

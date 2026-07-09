@@ -62,8 +62,7 @@ public class OccupancyTypeExplore
                 OccupancyType = occupancy,
                 Value = (float)(100_000 + rng.NextDouble() * 200_000),
                 ContentValue = (float)(50_000 + rng.NextDouble() * 100_000),
-                FoundationHeight = (float)(rng.NextDouble() * 3.0),
-                NumStories = 1
+                FoundationHeight = (float)(rng.NextDouble() * 3.0)
             };
 
             float depth = (float)(rng.NextDouble() * 12.0);

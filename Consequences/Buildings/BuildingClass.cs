@@ -16,7 +16,7 @@ public class BuildingClass : IConsequenceReceptor<DepthHazard, DamageResult>
     public int NumStories { get; init; }
 
 
-    public StabilityCriteria? SampledStabilityCriteria { get; init; }
+    public StabilityThreshold? SampledStabilityCriteria { get; init; }
 
 
     public DamageResult Compute(float depth) => Compute(depth, this);
@@ -46,7 +46,7 @@ public class BuildingClass : IConsequenceReceptor<DepthHazard, DamageResult>
             return new(0, 0);
         float structureValue = building.Value * occ.StructureValuePercentageOfTheMean;
         float contentValue = building.ContentValue * occ.ContentValuePercentageOfTheMean;
-        if (building.SampledStabilityCriteria != null && building.SampledStabilityCriteria.Collapsed(depth, velocity, building.FoundationHeight))
+        if (building.SampledStabilityCriteria != null && building.SampledStabilityCriteria.Collapsed(effectiveDepth, velocity))
         {
             return new DamageResult(structureValue, contentValue);
         }

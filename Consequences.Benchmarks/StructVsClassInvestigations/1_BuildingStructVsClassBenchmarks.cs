@@ -140,8 +140,7 @@ public class BuildingStructVsClassBenchmarks
             OccupancyType = occupancy,
             Value = 200_000f,
             ContentValue = 100_000f,
-            FoundationHeight = 1.5f,
-            NumStories = 1,
+            FoundationHeight = 1.5f
         };
 
         _buildingClass = new BuildingClass

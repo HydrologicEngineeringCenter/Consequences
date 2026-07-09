@@ -46,8 +46,7 @@ public class BuildingGenericComputerBenchmarks
             OccupancyType = occupancy,
             Value = 200_000f,
             ContentValue = 100_000f,
-            FoundationHeight = 1.5f,
-            NumStories = 1,
+            FoundationHeight = 1.5f
         };
 
         var rng = new Random(42);

@@ -4,29 +4,28 @@ using Numerics.Data;
 
 namespace Consequences.Stability;
 
-public class StabilityCriteria
+public class StabilityThreshold
 {
     private string _name = string.Empty;
     private readonly OrderedPairedData _threshold;
-    public StabilityCriteria(OrderedPairedData threshold)
+    public StabilityThreshold(OrderedPairedData threshold)
     {
         _threshold = threshold;
     }
 
-    public bool Collapsed(DepthVelocity depthVelocity, float foundationHeight)
+    public bool Collapsed(DepthVelocity depthVelocity)
     {
-        return Collapsed(depthVelocity.Depth, depthVelocity.Velocity, foundationHeight, _threshold);
+        return Collapsed(depthVelocity.Depth, depthVelocity.Velocity, _threshold);
     }
-    public bool Collapsed(float depth, float velocity, float foundationHeight)
+    public bool Collapsed(float depth, float velocity)
     {
-        return Collapsed(depth, velocity, foundationHeight, _threshold);
-    }
-
-    public static bool Collapsed(float depth, float velocity, float foundationHeight, OrderedPairedData threshold)
-    {
-        return threshold.GetYFromX(velocity) <= depth - foundationHeight;
+        return Collapsed(depth, velocity, _threshold);
     }
 
+    public static bool Collapsed(float depth, float velocity, OrderedPairedData threshold)
+    {
+        return threshold.GetYFromX(velocity) <= depth;
+    }
 
     public bool Collapsed(HydraulicTimeSeries hydTimeSeries, float foundationHeight)
     {

@@ -67,13 +67,15 @@ public class HydraulicTimeSeries:IHydraulicTimeseriesHazard
                 Depths[i] = allDepthValues[indicesToKeep[i]];
                 Velocities[i] = allVelocityValues[indicesToKeep[i]];
             }
-
+            float dv, dvSquared = 0.0f;
             for (int i = 0; i < allDepthValues.Length; i++)
             {
                 if (allDepthValues[i] > MaxDepth) { MaxDepth = allDepthValues[i]; }
                 if (allVelocityValues[i] > MaxVelocity) { MaxVelocity = allVelocityValues[i]; }
-                if (allDepthValues[i] * allVelocityValues[i] > MaxDepthTimesVelocity) { MaxDepthTimesVelocity = allDepthValues[i] * allVelocityValues[i]; }
-                if (allDepthValues[i] * (Math.Pow(allVelocityValues[i], 2)) > MaxDepthTimesVelocitySquared) { MaxDepthTimesVelocitySquared = (float)(allDepthValues[i] * (Math.Pow(allVelocityValues[i], 2))); }
+                dv = allDepthValues[i]*allVelocityValues[i];
+                dvSquared = dv * allVelocityValues[i];  
+                if (dv > MaxDepthTimesVelocity) { MaxDepthTimesVelocity = dv; }
+                if (dvSquared > MaxDepthTimesVelocitySquared) { MaxDepthTimesVelocitySquared = dvSquared; }
             }
         }
         else

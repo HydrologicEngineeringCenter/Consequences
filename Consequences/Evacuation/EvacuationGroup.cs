@@ -20,7 +20,7 @@ public struct EvacuationGroup
 
     public TransportationMode ModeOfTransportation { get; }
     public float DepthThreshold { get; }
-    public StabilityCriteria StabilityCriteria { get; }
+    public StabilityThreshold StabilityCriteria { get; }
     public bool HasGPS { get; set; }
 
     public int GroupIndex { get; set; }
@@ -36,7 +36,7 @@ public struct EvacuationGroup
         byte under65,
         byte over65,
         TransportationMode modeOfTransportation,
-        StabilityCriteria stabilityCriteria,
+        StabilityThreshold stabilityCriteria,
         float depthThreshold,
         int originIndex,
         float warningTime,
@@ -55,15 +55,4 @@ public struct EvacuationGroup
         ActualMobilizeTime = initialMobilizeTime;
     }
 
-    public bool StabilityLost(float depth, float velocity, float foundationHeight = 0f)
-    {
-        if (depth <= 0) return false;
-        return StabilityCriteria.Collapsed(depth, velocity, foundationHeight);
-    }
-
-    public bool StabilityLost(HydraulicTimeSeries hydraulics, float foundationHeight = 0f)
-    {
-        if (hydraulics.MaxDepth <= 0) return false;
-        return StabilityCriteria.Collapsed(hydraulics, foundationHeight);
-    }
 }

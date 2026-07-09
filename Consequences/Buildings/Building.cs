@@ -13,10 +13,8 @@ public struct Building : IConsequenceReceptor<DepthHazard, DamageResult>
     public float ContentValue { get; init; }
 
     public float FoundationHeight { get; init; }
-    public int NumStories { get; init; }
     
-
-    public StabilityCriteria? SampledStabilityCriteria { get; init; }
+    public StabilityThreshold? StabilityThreshold { get; init; }
 
 
     public DamageResult Compute(float depth) => Compute(depth, this);
@@ -46,7 +44,7 @@ public struct Building : IConsequenceReceptor<DepthHazard, DamageResult>
             return new(0, 0);
         float structureValue = building.Value * occ.StructureValuePercentageOfTheMean;
         float contentValue = building.ContentValue * occ.ContentValuePercentageOfTheMean;
-        if (building.SampledStabilityCriteria != null && building.SampledStabilityCriteria.Collapsed(depth, velocity, building.FoundationHeight))
+        if (building.StabilityThreshold != null && building.StabilityThreshold.Collapsed(effectiveDepth, velocity))
         {
             return new DamageResult(structureValue, contentValue);
         }
@@ -59,7 +57,7 @@ public struct Building : IConsequenceReceptor<DepthHazard, DamageResult>
     public static float ComputeMetal(float depth, Building building)
     {
         var occ = building.OccupancyType;
-        float effectiveDepth = depth - building.FoundationHeight - building.OccupancyType.FoundationHeightOffset;
+        float effectiveDepth = depth - building.FoundationHeight - occ.FoundationHeightOffset;
 
         float structureValue = building.Value * occ.StructureValuePercentageOfTheMean;
         float contentValue = building.ContentValue * occ.ContentValuePercentageOfTheMean;
