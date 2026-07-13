@@ -4,6 +4,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="Consequences.Benchmarks/Consequences.Benchmarks.csproj" />
-  <Project Path="Consequences/Consequences.csproj" />
+  <Folder Name="/Core/">
+    <Project Path="Consequences.Benchmarks/Consequences.Benchmarks.csproj" />
+    <Project Path="Consequences/Consequences.csproj" />
+  </Folder>
 </Solution>
