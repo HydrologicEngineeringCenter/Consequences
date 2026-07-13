@@ -31,6 +31,7 @@ A one-off comparison tool (`Tools/OccTypeComparison`, since removed — this ADR
 
 - `comparison-report.html` — self-contained expert-facing report: coverage matrix, attribute inventory, methodology, and overlaid depth-damage curves per type, sorted most-divergent first.
 - `occtypes-fia.canonical.json` / `occtypes-go.canonical.json` — both sources in the neutral intermediate schema (curves with central values and uncertainty bands, plus all non-curve parameters), including everything not transcribed into Core: FIA vehicle/other curves, life-loss/evacuation/submergence parameters, and go-consequences erosion/coastal functions.
+- `uncertainty-comparison.md` — follow-up comparison (2026-07-13) of the uncertainty distributions about the curve ordinates: the sources agree exactly on the comparable set (63 pairs deterministic in both, 16 RES1 pairs Normal in both with per-ordinate standard deviations identical to the digit); the remaining uncertainty content is source-exclusive and additive rather than conflicting.
 
 ## Consequences
 

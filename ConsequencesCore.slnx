@@ -8,10 +8,4 @@
     <Project Path="Consequences.Benchmarks/Consequences.Benchmarks.csproj" />
     <Project Path="Consequences/Consequences.csproj" />
   </Folder>
-  <Folder Name="/Scratch/">
-    <Project Path="Scratch/Scratch.csproj" Id="f818f558-1c80-4d93-9aab-f762b92f9308" />
-  </Folder>
-  <Folder Name="/Tools/">
-    <Project Path="Tools/OccTypeComparison/OccTypeComparison.csproj" />
-  </Folder>
 </Solution>
