@@ -8,11 +8,11 @@ namespace Consequences.Crops;
 public struct ProductionFunction
 {
     public double HarvestCost { get; init; }
-    public double[] CumulativeMonthlyProductionCostsEarly { get; init; }
-    public double[] CumulativeMonthlyProductionCostsLate { get; init; }
-    public double[] CumulativeMonthlyFixedCostsOnly { get; init; }
-    public double ProductionCostLessHarvest { get; init; }
-    public double LossFromLatePlanting { get; init; }
+    public double[] CumulativeMonthlyProductionCostsEarly { get; set; }
+    public double[] CumulativeMonthlyProductionCostsLate { get; set; }
+    public double[] CumulativeMonthlyFixedCostsOnly { get; set; }
+    public double ProductionCostLessHarvest { get; set; }
+    public double LossFromLatePlanting { get; set; }
 
     /// <summary>
     /// Returns the cumulative production cost exposed at the month of hazard arrival.
