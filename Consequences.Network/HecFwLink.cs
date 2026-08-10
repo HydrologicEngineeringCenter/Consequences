@@ -15,7 +15,15 @@ public static class HecFwLink
     private const string AS_STRING = "&type=string";
 
     // A resolve that hangs must not hold up whatever is waiting on the endpoint.
-    private static readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    // PooledConnectionLifetime per the HttpClient guidelines:
+    // https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines
+    private static readonly HttpClient _shared = new(new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(15),
+    };
 
 
     /// <summary>
@@ -29,13 +37,20 @@ public static class HecFwLink
     /// <summary>
     /// Asks the fwlink service what <paramref name="linkId"/> currently points at.
     /// </summary>
+    /// <param name="linkId">The registered id to resolve.</param>
+    /// <param name="client">
+    /// The client to resolve with. Defaults to a shared one; pass your own to resolve over a
+    /// stubbed handler in a test.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the resolve.</param>
     /// <exception cref="InvalidOperationException">The link id is not registered.</exception>
     public static async Task<string> ResolveAsync(
         string linkId,
+        HttpClient? client = null,
         CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response =
-            await _client.GetAsync(BuildUrl(linkId) + AS_STRING, cancellationToken);
+            await (client ?? _shared).GetAsync(BuildUrl(linkId) + AS_STRING, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
