@@ -80,6 +80,9 @@ public sealed class NsiImporter
         INsiStructureMapper<TReceptor> mapper,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(boundingBox);
+        ArgumentNullException.ThrowIfNull(mapper);
+
         string root = await ResolveRoot(cancellationToken);
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_COLLECTION);
 
@@ -106,7 +109,24 @@ public sealed class NsiImporter
     /// Streams the record-separated response, projecting each structure as it arrives so
     /// the full collection never has to be held in memory.
     /// </summary>
-    public async IAsyncEnumerable<TReceptor> StreamCollection<TReceptor>(
+    /// <remarks>
+    /// Split in two so the argument checks are not deferred: an iterator method runs no part of its
+    /// body until the first <c>MoveNextAsync</c>, which would surface a bad bounding box or a null
+    /// mapper at the caller's foreach rather than at the call itself.
+    /// </remarks>
+    public IAsyncEnumerable<TReceptor> StreamCollection<TReceptor>(
+        string boundingBox,
+        INsiStructureMapper<TReceptor> mapper,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(boundingBox);
+        ArgumentNullException.ThrowIfNull(mapper);
+
+        return StreamCollectionCore(boundingBox, mapper, cancellationToken);
+    }
+
+
+    private async IAsyncEnumerable<TReceptor> StreamCollectionCore<TReceptor>(
         string boundingBox,
         INsiStructureMapper<TReceptor> mapper,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
