@@ -18,8 +18,9 @@ namespace Consequences.Network;
 /// — a stubbed handler in a test, or one carrying a proxy or credentials — or to pin the
 /// importer to an API root of your own.
 ///
-/// Request, parse and mapping failures all propagate. An empty result means the bounding
-/// box held no structures, and nothing else.
+/// Request, parse and mapping failures all propagate. A request failure carries what the
+/// service actually said, not just its status code. An empty result means the bounding box
+/// held no structures, and nothing else.
 /// </summary>
 public sealed class NsiImporter
 {
@@ -86,7 +87,8 @@ public sealed class NsiImporter
         string root = await ResolveRoot(cancellationToken);
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_COLLECTION);
 
-        using Stream jsonResponse = await _client.GetStreamAsync(apiUrl, cancellationToken);
+        using HttpResponseMessage response = await Send(apiUrl, cancellationToken);
+        using Stream jsonResponse = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         List<NsiStructure> structures =
             await NsiJsonParser.ParseFeatureCollectionAsync(jsonResponse, cancellationToken);
@@ -134,13 +136,93 @@ public sealed class NsiImporter
         string root = await ResolveRoot(cancellationToken);
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_STREAM);
 
-        using Stream jsonResponse = await _client.GetStreamAsync(apiUrl, cancellationToken);
+        using HttpResponseMessage response = await Send(apiUrl, cancellationToken);
+        using Stream jsonResponse = await response.Content.ReadAsStreamAsync(cancellationToken);
         using StreamReader reader = new(jsonResponse);
 
         await foreach (NsiStructure structure in
             NsiJsonParser.ParseFeatureStreamAsync(reader, cancellationToken))
         {
             yield return mapper.Map(structure);
+        }
+    }
+
+
+    /// <summary>
+    /// Sends the request and hands back the response with its body unread, having first checked
+    /// what the service said.
+    ///
+    /// <see cref="HttpClient.GetStreamAsync(string, CancellationToken)"/> would do the same fetch
+    /// and then discard the response, so a failure arrives as a status code with no explanation.
+    /// NSI puts the reason a request was rejected in the body, which is the part worth keeping.
+    /// </summary>
+    /// <remarks>
+    /// The caller owns the returned response and disposes it. A send that throws disposes its own.
+    /// <see cref="HttpCompletionOption.ResponseHeadersRead"/> is what
+    /// <see cref="HttpClient.GetStreamAsync(string, CancellationToken)"/> uses internally, so the
+    /// body still streams — nothing here waits for the whole response.
+    /// </remarks>
+    /// <exception cref="HttpRequestException">
+    /// The service refused the request, or answered with something other than structures.
+    /// </exception>
+    private async Task<HttpResponseMessage> Send(string apiUrl, CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await _client.GetAsync(
+            apiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                string detail = await ReadDetail(response, cancellationToken);
+
+                throw new HttpRequestException(
+                    $"NSI returned {(int)response.StatusCode} {response.ReasonPhrase} for {apiUrl}." +
+                    (detail.Length == 0 ? "" : $" Service said: {detail}"),
+                    inner: null,
+                    statusCode: response.StatusCode);
+            }
+
+            // An error page carries a 200 and would otherwise reach the parser as malformed JSON,
+            // the same trap HecFwLink guards against on the resolve.
+            if (response.Content.Headers.ContentType?.MediaType == "text/html")
+            {
+                throw new HttpRequestException(
+                    $"NSI returned an HTML page rather than structures for {apiUrl}. " +
+                    $"Service said: {await ReadDetail(response, cancellationToken)}",
+                    inner: null,
+                    statusCode: response.StatusCode);
+            }
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+
+        return response;
+    }
+
+
+    /// <summary>
+    /// The service's own words, for an exception message. An error body is small, and a truncated
+    /// one still names the problem; a body that will not read is not worth failing twice over.
+    /// </summary>
+    private static async Task<string> ReadDetail(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        const int LIMIT = 500;
+
+        try
+        {
+            string body = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+
+            return body.Length <= LIMIT ? body : body[..LIMIT] + "…";
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return "";
         }
     }
 

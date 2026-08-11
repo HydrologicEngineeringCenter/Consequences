@@ -79,6 +79,7 @@ public class NsiImporterTests
             () => importer.ProcessCollection(BoundingBox));
 
         Assert.Equal(status, error.StatusCode);
+        Assert.Contains("upstream said no", error.Message);
     }
 
     [Theory]
@@ -96,6 +97,47 @@ public class NsiImporterTests
         });
 
         Assert.Equal(status, error.StatusCode);
+        Assert.Contains("upstream said no", error.Message);
+    }
+
+
+    /// <summary>
+    /// The failure the status code cannot report: a 200 carrying an error page. Left to the parser
+    /// it surfaces as malformed JSON, which says nothing about what went wrong.
+    /// </summary>
+    [Fact]
+    public async Task ProcessCollection_RejectsAnHtmlErrorPageCarryingA200()
+    {
+        HttpClient client = new(new StubHttpMessageHandler(_ => StubHttpMessageHandler.Responding(
+            HttpStatusCode.OK,
+            "<!DOCTYPE html><html><body>Service unavailable</body></html>",
+            "text/html")));
+
+        NsiImporter importer = new(client, Root);
+
+        HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(
+            () => importer.ProcessCollection(BoundingBox));
+
+        Assert.Contains("HTML page", error.Message);
+    }
+
+
+    [Fact]
+    public async Task StreamCollection_RejectsAnHtmlErrorPageCarryingA200()
+    {
+        HttpClient client = new(new StubHttpMessageHandler(_ => StubHttpMessageHandler.Responding(
+            HttpStatusCode.OK,
+            "<!DOCTYPE html><html><body>Service unavailable</body></html>",
+            "text/html")));
+
+        NsiImporter importer = new(client, Root);
+
+        HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            await foreach (Building _ in importer.StreamCollection(BoundingBox)) { }
+        });
+
+        Assert.Contains("HTML page", error.Message);
     }
 
     [Fact]

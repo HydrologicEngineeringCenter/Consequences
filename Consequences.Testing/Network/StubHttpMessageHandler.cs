@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 
 namespace Consequences.Testing.Network;
 
@@ -24,6 +25,13 @@ public sealed class StubHttpMessageHandler(
 
     public static HttpResponseMessage Responding(HttpStatusCode status, string body) =>
         new(status) { Content = new StringContent(body) };
+
+    /// <summary>
+    /// Answers with a body of <paramref name="mediaType"/>, for the cases where the importer
+    /// decides on the content type rather than the status.
+    /// </summary>
+    public static HttpResponseMessage Responding(HttpStatusCode status, string body, string mediaType) =>
+        new(status) { Content = new StringContent(body, Encoding.UTF8, mediaType) };
 
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
