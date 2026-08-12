@@ -18,7 +18,17 @@ public sealed class BuildingMapper : INsiStructureMapper<Building>
 
     public BuildingMapper(IEnumerable<OccupancyType> occupancyTypes)
     {
-        _occupancyTypes = occupancyTypes.ToDictionary(o => o.Name, StringComparer.OrdinalIgnoreCase);
+        ArgumentNullException.ThrowIfNull(occupancyTypes);
+
+        _occupancyTypes = new Dictionary<string, OccupancyType>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (OccupancyType occupancyType in occupancyTypes)
+        {
+            if (!_occupancyTypes.TryAdd(occupancyType.Name, occupancyType))
+                throw new ArgumentException(
+                    $"Duplicate occupancy type name '{occupancyType.Name}'",
+                    nameof(occupancyTypes));
+        }
     }
 
     /// <summary>
