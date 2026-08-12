@@ -65,17 +65,17 @@ public sealed class NsiImporter
     /// Downloads the whole feature collection as <see cref="Building"/>s using the
     /// default occupancy types.
     /// </summary>
-    public Task<List<Building>> ProcessCollection(
+    public Task<List<Building>> GetBuildingsAsync(
         string boundingBox,
         CancellationToken cancellationToken = default) =>
-        ProcessCollection(boundingBox, BuildingMapper.WithDefaultOccupancyTypes(), cancellationToken);
+        GetReceptorsAsync(boundingBox, BuildingMapper.WithDefaultOccupancyTypes(), cancellationToken);
 
 
     /// <summary>
     /// Downloads the whole feature collection, mapping each structure with
     /// <paramref name="mapper"/>. Swap the mapper to import a different receptor type.
     /// </summary>
-    public async Task<List<TReceptor>> ProcessCollection<TReceptor>(
+    public async Task<List<TReceptor>> GetReceptorsAsync<TReceptor>(
         string boundingBox,
         INsiStructureMapper<TReceptor> mapper,
         CancellationToken cancellationToken = default)
@@ -83,10 +83,10 @@ public sealed class NsiImporter
         ArgumentException.ThrowIfNullOrWhiteSpace(boundingBox);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        string root = await ResolveRoot(cancellationToken);
+        string root = await ResolveRootAsync(cancellationToken);
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_COLLECTION);
 
-        using HttpResponseMessage response = await Send(apiUrl, cancellationToken);
+        using HttpResponseMessage response = await SendAsync(apiUrl, cancellationToken);
         using Stream jsonResponse = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         List<NsiStructure> structures =
@@ -100,10 +100,10 @@ public sealed class NsiImporter
     /// Streams the record-separated response as <see cref="Building"/>s using the
     /// default occupancy types.
     /// </summary>
-    public IAsyncEnumerable<Building> StreamCollection(
+    public IAsyncEnumerable<Building> StreamBuildingsAsync(
         string boundingBox,
         CancellationToken cancellationToken = default) =>
-        StreamCollection(boundingBox, BuildingMapper.WithDefaultOccupancyTypes(), cancellationToken);
+        StreamReceptorsAsync(boundingBox, BuildingMapper.WithDefaultOccupancyTypes(), cancellationToken);
 
 
     /// <summary>
@@ -115,7 +115,7 @@ public sealed class NsiImporter
     /// body until the first <c>MoveNextAsync</c>, which would surface a bad bounding box or a null
     /// mapper at the caller's foreach rather than at the call itself.
     /// </remarks>
-    public IAsyncEnumerable<TReceptor> StreamCollection<TReceptor>(
+    public IAsyncEnumerable<TReceptor> StreamReceptorsAsync<TReceptor>(
         string boundingBox,
         INsiStructureMapper<TReceptor> mapper,
         CancellationToken cancellationToken = default)
@@ -123,19 +123,19 @@ public sealed class NsiImporter
         ArgumentException.ThrowIfNullOrWhiteSpace(boundingBox);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        return StreamCollectionCore(boundingBox, mapper, cancellationToken);
+        return StreamReceptorsCoreAsync(boundingBox, mapper, cancellationToken);
     }
 
 
-    private async IAsyncEnumerable<TReceptor> StreamCollectionCore<TReceptor>(
+    private async IAsyncEnumerable<TReceptor> StreamReceptorsCoreAsync<TReceptor>(
         string boundingBox,
         INsiStructureMapper<TReceptor> mapper,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        string root = await ResolveRoot(cancellationToken);
+        string root = await ResolveRootAsync(cancellationToken);
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_STREAM);
 
-        using HttpResponseMessage response = await Send(apiUrl, cancellationToken);
+        using HttpResponseMessage response = await SendAsync(apiUrl, cancellationToken);
         using Stream jsonResponse = await response.Content.ReadAsStreamAsync(cancellationToken);
         using StreamReader reader = new(jsonResponse);
 
@@ -164,7 +164,7 @@ public sealed class NsiImporter
     /// <exception cref="HttpRequestException">
     /// The service refused the request, or answered with something other than structures.
     /// </exception>
-    private async Task<HttpResponseMessage> Send(string apiUrl, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(string apiUrl, CancellationToken cancellationToken)
     {
         HttpResponseMessage response = await _client.GetAsync(
             apiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -173,7 +173,7 @@ public sealed class NsiImporter
         {
             if (!response.IsSuccessStatusCode)
             {
-                string detail = await ReadDetail(response, cancellationToken);
+                string detail = await ReadDetailAsync(response, cancellationToken);
 
                 throw new HttpRequestException(
                     $"NSI returned {(int)response.StatusCode} {response.ReasonPhrase} for {apiUrl}." +
@@ -188,7 +188,7 @@ public sealed class NsiImporter
             {
                 throw new HttpRequestException(
                     $"NSI returned an HTML page rather than structures for {apiUrl}. " +
-                    $"Service said: {await ReadDetail(response, cancellationToken)}",
+                    $"Service said: {await ReadDetailAsync(response, cancellationToken)}",
                     inner: null,
                     statusCode: response.StatusCode);
             }
@@ -207,7 +207,7 @@ public sealed class NsiImporter
     /// The service's own words, for an exception message. An error body is small, and a truncated
     /// one still names the problem; a body that will not read is not worth failing twice over.
     /// </summary>
-    private static async Task<string> ReadDetail(
+    private static async Task<string> ReadDetailAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken)
     {
@@ -230,7 +230,7 @@ public sealed class NsiImporter
     /// Resolved once per importer. Two callers racing here cost a duplicate lookup and nothing
     /// else, since both arrive at the same address.
     /// </summary>
-    private async Task<string> ResolveRoot(CancellationToken cancellationToken)
+    private async Task<string> ResolveRootAsync(CancellationToken cancellationToken)
     {
         if (_fixedRoot != null)
             return _fixedRoot;

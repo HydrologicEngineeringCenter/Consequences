@@ -66,7 +66,7 @@ public class NsiImporterTests
             StubHttpMessageHandler.ClientReturning(NsiSamples.FeatureCollectionJson),
             Root);
 
-        List<Building> buildings = await importer.ProcessCollection(BoundingBox);
+        List<Building> buildings = await importer.GetBuildingsAsync(BoundingBox);
 
         Assert.Equal(2, buildings.Count);
     }
@@ -80,7 +80,7 @@ public class NsiImporterTests
 
         List<Building> buildings = [];
 
-        await foreach (Building building in importer.StreamCollection(BoundingBox))
+        await foreach (Building building in importer.StreamBuildingsAsync(BoundingBox))
             buildings.Add(building);
 
         Assert.Equal(2, buildings.Count);
@@ -98,7 +98,7 @@ public class NsiImporterTests
             Root);
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(
-            () => importer.ProcessCollection(BoundingBox));
+            () => importer.GetBuildingsAsync(BoundingBox));
 
         Assert.Equal(status, error.StatusCode);
         Assert.Contains("upstream said no", error.Message);
@@ -115,7 +115,7 @@ public class NsiImporterTests
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(async () =>
         {
-            await foreach (Building _ in importer.StreamCollection(BoundingBox)) { }
+            await foreach (Building _ in importer.StreamBuildingsAsync(BoundingBox)) { }
         });
 
         Assert.Equal(status, error.StatusCode);
@@ -138,7 +138,7 @@ public class NsiImporterTests
         NsiImporter importer = new(client, Root);
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(
-            () => importer.ProcessCollection(BoundingBox));
+            () => importer.GetBuildingsAsync(BoundingBox));
 
         Assert.Contains("HTML page", error.Message);
     }
@@ -156,7 +156,7 @@ public class NsiImporterTests
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(async () =>
         {
-            await foreach (Building _ in importer.StreamCollection(BoundingBox)) { }
+            await foreach (Building _ in importer.StreamBuildingsAsync(BoundingBox)) { }
         });
 
         Assert.Contains("HTML page", error.Message);
@@ -170,7 +170,7 @@ public class NsiImporterTests
 
         NsiImporter importer = new(new HttpClient(handler), Root.TrimEnd('/'));
 
-        await importer.ProcessCollection(BoundingBox);
+        await importer.GetBuildingsAsync(BoundingBox);
 
         Assert.Equal(
             Root + "structures?bbox=" + EncodedBoundingBox + "&fmt=fc",
@@ -187,7 +187,7 @@ public class NsiImporterTests
 
         NsiImporter importer = new(new HttpClient(handler));
 
-        await importer.ProcessCollection(BoundingBox);
+        await importer.GetBuildingsAsync(BoundingBox);
 
         Assert.Equal(2, handler.Requests.Count);
         Assert.Contains("linkid=" + KnownFwLinks.NsiApi, handler.Requests[0].ToString());
@@ -204,8 +204,8 @@ public class NsiImporterTests
 
         NsiImporter importer = new(new HttpClient(handler));
 
-        await importer.ProcessCollection(BoundingBox);
-        await importer.ProcessCollection(BoundingBox);
+        await importer.GetBuildingsAsync(BoundingBox);
+        await importer.GetBuildingsAsync(BoundingBox);
 
         // One resolve, then a fetch per call.
         Assert.Equal(3, handler.Requests.Count);
@@ -219,6 +219,6 @@ public class NsiImporterTests
             StubHttpMessageHandler.ClientReturning("<!DOCTYPE html><html>not found</html>"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => importer.ProcessCollection(BoundingBox));
+            () => importer.GetBuildingsAsync(BoundingBox));
     }
 }
