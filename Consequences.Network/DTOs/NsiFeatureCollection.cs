@@ -24,6 +24,6 @@ public sealed record NsiFeature
 /// </summary>
 public sealed record NsiGeometry
 {
-    [JsonPropertyName("type")]        public string Type              { get; init; } = "";
-    [JsonPropertyName("coordinates")] public double[] Coordinates     { get; init; } = [];
+    [JsonPropertyName("type")]        public string Type                        { get; init; } = "";
+    [JsonPropertyName("coordinates")] public ReadOnlyMemory<double> Coordinates { get; init; }
 }

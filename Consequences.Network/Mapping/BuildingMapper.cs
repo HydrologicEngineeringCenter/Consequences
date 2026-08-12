@@ -5,7 +5,7 @@ using Consequences.Occupancy;
 namespace Consequences.Network.Mapping;
 
 /// <summary>
-/// Projects an NSI structure onto a <see cref="Building"/>.
+/// Maps an NSI structure onto a <see cref="Building"/>.
 ///
 /// The JSON carries an occupancy type <em>name</em>; the domain needs an
 /// <see cref="OccupancyType"/> with its damage curves. That lookup is why NSI cannot

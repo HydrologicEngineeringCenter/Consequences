@@ -8,7 +8,7 @@ namespace Consequences.Network;
 /// <summary>
 /// Fetches structures from the National Structure Inventory. This class owns the HTTP
 /// concerns only — the response formats are handled by <see cref="NsiJsonParser"/> and
-/// the projection onto a domain type by an <see cref="INsiStructureMapper{TReceptor}"/>.
+/// the mapping onto a domain type by an <see cref="INsiStructureMapper{TReceptor}"/>.
 ///
 /// The API root is resolved through <see cref="HecFwLink"/> rather than being compiled in,
 /// so NSI can move without a release of this library.
@@ -72,7 +72,7 @@ public sealed class NsiImporter
 
 
     /// <summary>
-    /// Downloads the whole feature collection, projecting each structure with
+    /// Downloads the whole feature collection, mapping each structure with
     /// <paramref name="mapper"/>. Swap the mapper to import a different receptor type.
     /// </summary>
     public async Task<List<TReceptor>> ProcessCollection<TReceptor>(
@@ -107,7 +107,7 @@ public sealed class NsiImporter
 
 
     /// <summary>
-    /// Streams the record-separated response, projecting each structure as it arrives so
+    /// Streams the record-separated response, mapping each structure as it arrives so
     /// the full collection never has to be held in memory.
     /// </summary>
     /// <remarks>
