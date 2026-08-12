@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using System.Text;
 using Consequences.Buildings;
 using Consequences.Network.DTOs;
 using Consequences.Network.Mapping;
@@ -24,8 +23,8 @@ namespace Consequences.Network;
 /// </summary>
 public sealed class NsiImporter
 {
-    private const string FEATURE_COLLECTION = "&fmt=fc";
-    private const string FEATURE_STREAM = "&fmt=fs";
+    private const string FEATURE_COLLECTION = "fc";
+    private const string FEATURE_STREAM = "fs";
 
     // PooledConnectionLifetime per the HttpClient guidelines: a client this long-lived would
     // otherwise hold connections that never notice DNS moving underneath them.
@@ -252,17 +251,13 @@ public sealed class NsiImporter
         root.EndsWith('/') ? root : root + '/';
 
 
-    internal static string StructuresEndpoint(string root, string boundingBox, string directive)
-    {
-        StringBuilder url = new();
+    /// <remarks>
+    /// The box is escaped because an unescaped '#' in it would make a fragment of the rest of the
+    /// URL, silently dropping &amp;fmt. That also encodes the separating commas as %2C, which NSI
+    /// decodes to the same query it would have received unencoded.
+    /// </remarks>
+    internal static string StructuresEndpoint(string root, string boundingBox, string format) =>
+        $"{root}structures?bbox={Uri.EscapeDataString(boundingBox)}&fmt={format}";
 
-        url.Append(root);
-        url.Append("structures?bbox=");
-        url.Append(boundingBox);
 
-        // directive to specify collection or stream
-        url.Append(directive);
-
-        return url.ToString();
-    }
 }

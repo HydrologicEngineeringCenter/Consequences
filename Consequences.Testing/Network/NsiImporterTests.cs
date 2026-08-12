@@ -18,23 +18,45 @@ public class NsiImporterTests
     private const string BoundingBox =
         "-81.576,30.267,-81.573,30.267,-81.573,30.269,-81.576,30.269,-81.576,30.267";
 
+    /// <summary>
+    /// <see cref="BoundingBox"/> as it goes on the wire. The separating commas are escaped because
+    /// escaping is what stops a '#' from truncating the URL; NSI decodes them and answers exactly
+    /// as it does for the unescaped form.
+    /// </summary>
+    private const string EncodedBoundingBox =
+        "-81.576%2C30.267%2C-81.573%2C30.267%2C-81.573%2C30.269%2C-81.576%2C30.269%2C-81.576%2C30.267";
+
     [Fact]
     public void StructuresEndpoint_BuildsTheFeatureCollectionUrl()
     {
-        string url = NsiImporter.StructuresEndpoint(Root, BoundingBox, "&fmt=fc");
+        string url = NsiImporter.StructuresEndpoint(Root, BoundingBox, "fc");
 
         Assert.Equal(
-            Root + "structures?bbox=" + BoundingBox + "&fmt=fc",
+            Root + "structures?bbox=" + EncodedBoundingBox + "&fmt=fc",
             url);
     }
 
     [Fact]
     public void StructuresEndpoint_BuildsTheFeatureStreamUrl()
     {
-        string url = NsiImporter.StructuresEndpoint(Root, BoundingBox, "&fmt=fs");
+        string url = NsiImporter.StructuresEndpoint(Root, BoundingBox, "fs");
 
         Assert.EndsWith("&fmt=fs", url);
-        Assert.Contains("bbox=" + BoundingBox, url);
+        Assert.Contains("bbox=" + EncodedBoundingBox, url);
+    }
+
+    /// <summary>
+    /// Left alone, a '#' makes a fragment of everything after it, so &amp;fmt never reaches NSI
+    /// and the service answers in whichever format it defaults to.
+    /// </summary>
+    [Fact]
+    public void StructuresEndpoint_EscapesABoxThatWouldOtherwiseTruncateTheUrl()
+    {
+        string url = NsiImporter.StructuresEndpoint(Root, "-81.576,30.267#", "fs");
+
+        Assert.Equal(Root + "structures?bbox=-81.576%2C30.267%23&fmt=fs", url);
+        Assert.EndsWith("&fmt=fs", new Uri(url).Query);
+        Assert.Empty(new Uri(url).Fragment);
     }
 
     [Fact]
@@ -150,7 +172,9 @@ public class NsiImporterTests
 
         await importer.ProcessCollection(BoundingBox);
 
-        Assert.Equal(Root + "structures?bbox=" + BoundingBox + "&fmt=fc", Assert.Single(handler.Requests).ToString());
+        Assert.Equal(
+            Root + "structures?bbox=" + EncodedBoundingBox + "&fmt=fc",
+            Assert.Single(handler.Requests).ToString());
     }
 
     [Fact]
