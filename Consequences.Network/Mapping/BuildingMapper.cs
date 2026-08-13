@@ -68,7 +68,7 @@ public sealed class BuildingMapper : INsiStructureMapper<Building>
             Value = (float)structure.ValStruct,
             ContentValue = (float)structure.ValCont,
             FoundationHeight = structure.FoundHt,
-            StabilityThreshold = StabilityThreshold,
+            StabilityThreshold = null,
         };
         return true;
     }

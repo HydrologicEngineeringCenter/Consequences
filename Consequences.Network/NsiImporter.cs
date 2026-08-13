@@ -87,6 +87,7 @@ public sealed class NsiImporter
         string apiUrl = StructuresEndpoint(root, boundingBox, FEATURE_COLLECTION);
 
         using HttpResponseMessage response = await SendAsync(apiUrl, cancellationToken);
+        response.EnsureSuccessStatusCode();
         using Stream jsonResponse = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         List<NsiStructure> structures =
