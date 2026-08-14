@@ -36,19 +36,23 @@ public class BuildingMapperTests
         Assert.Null(building.StabilityThreshold);
     }
 
+    /// <summary>
+    /// Stability thresholds are not an NSI attribute, so mapping never supplies one.
+    /// Callers attach it afterwards — which is why the property is settable.
+    /// </summary>
     [Fact]
-    public void Map_AttachesTheConfiguredStabilityThreshold()
+    public void Map_LeavesTheStabilityThresholdForTheCallerToAttach()
     {
         StabilityThreshold threshold = new(new OrderedPairedData(
             [0, 10], [10, 1],
             strictOnX: true, SortOrder.Ascending, strictOnY: true, SortOrder.Descending));
 
-        BuildingMapper mapper = new(OccupancyTypeDefaults.GetDefaults())
-        {
-            StabilityThreshold = threshold,
-        };
+        Building building = BuildingMapper.WithDefaultOccupancyTypes().Map(Residence());
+        Assert.Null(building.StabilityThreshold);
 
-        Assert.Same(threshold, mapper.Map(Residence()).StabilityThreshold);
+        building.StabilityThreshold = threshold;
+
+        Assert.Same(threshold, building.StabilityThreshold);
     }
 
     [Fact]

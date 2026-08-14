@@ -36,12 +36,6 @@ public sealed class BuildingMapper : INsiStructureMapper<Building>
     /// </summary>
     public static BuildingMapper WithDefaultOccupancyTypes() => new(OccupancyTypeDefaults.GetDefaults());
 
-    /// <summary>
-    /// Stability thresholds are not an NSI attribute; supply one to attach it to every
-    /// mapped building, or leave it null for damage-only runs.
-    /// </summary>
-    public Stability.StabilityThreshold? StabilityThreshold { get; init; }
-
     /// <exception cref="KeyNotFoundException">
     /// The structure's occtype is not in this mapper's occupancy type set. Dropping the
     /// structure instead would silently understate consequences, so use
@@ -68,6 +62,7 @@ public sealed class BuildingMapper : INsiStructureMapper<Building>
             Value = (float)structure.ValStruct,
             ContentValue = (float)structure.ValCont,
             FoundationHeight = structure.FoundHt,
+            // Not an NSI attribute. Callers assign it after mapping.
             StabilityThreshold = null,
         };
         return true;
