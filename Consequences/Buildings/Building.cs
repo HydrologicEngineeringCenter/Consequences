@@ -14,7 +14,7 @@ public struct Building : IConsequenceReceptor<DepthHazard, DamageResult>
 
     public float FoundationHeight { get; init; }
     
-    public StabilityThreshold? StabilityThreshold { get; init; }
+    public StabilityThreshold? StabilityThreshold { get; set; }
 
 
     public DamageResult Compute(float depth) => Compute(depth, this);
