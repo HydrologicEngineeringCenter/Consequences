@@ -5,7 +5,6 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetBuild
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetPack
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetTest
 import jetbrains.buildServer.configs.kotlin.buildSteps.powerShell
-import jetbrains.buildServer.configs.kotlin.triggers.vcs
 import jetbrains.buildServer.configs.kotlin.vcs.GitVcsRoot
 
 /*
@@ -485,7 +484,7 @@ object Endpoints : Project({
 
 object Endpoints_PRReview : BuildType({
     name = "PR Review"
-    description = "Pull requests: compile and test as a gate. Deliberately stops short of Sign Binaries and Pack so nothing that has not merged is ever signed with the organization certificate."
+    description = "Compile and test as a gate for a pull request branch. Run manually. Deliberately stops short of Sign Binaries and Pack so nothing that has not merged is ever signed with the organization certificate."
 
     buildNumberPattern = "%Version%"
 
@@ -495,13 +494,6 @@ object Endpoints_PRReview : BuildType({
 
     vcs {
         root(Repo)
-    }
-
-    triggers {
-        vcs {
-            triggerRules = "-:.teamcity/**"
-            branchFilter = "+:*/merge"
-        }
     }
 
     TrustedPullRequests.attach(this)
@@ -520,7 +512,7 @@ object Endpoints_PRReview : BuildType({
 
 object Endpoints_Release : BuildType({
     name = "Release"
-    description = "v* tags: publishes the clean tag version to consequences-nuget-public."
+    description = "Run manually against a v* tag: publishes the clean tag version to consequences-nuget-public."
 
     type = BuildTypeSettings.Type.DEPLOYMENT
     buildNumberPattern = "%Version%"
@@ -537,13 +529,6 @@ object Endpoints_Release : BuildType({
         """.trimIndent()
     }
 
-    triggers {
-        vcs {
-            triggerRules = "-:.teamcity/**"
-            branchFilter = "+:v*"
-        }
-    }
-
     dependencies {
         snapshot(Deploy_PushNuGets) {
             reuseBuilds = ReuseBuilds.NO
@@ -554,7 +539,7 @@ object Endpoints_Release : BuildType({
 
 object Endpoints_Snapshot : BuildType({
     name = "Snapshot"
-    description = "Pushes to main: publishes %VersionBase%.<counter>-dev to consequences-nuget-public."
+    description = "Run manually against main: publishes %VersionBase%.<counter>-dev to consequences-nuget-public."
 
     type = BuildTypeSettings.Type.DEPLOYMENT
     buildNumberPattern = "%Version%"
@@ -569,13 +554,6 @@ object Endpoints_Snapshot : BuildType({
         branchFilter = """
             +:<default>
         """.trimIndent()
-    }
-
-    triggers {
-        vcs {
-            triggerRules = "-:.teamcity/**"
-            branchFilter = "+:main"
-        }
     }
 
     dependencies {
