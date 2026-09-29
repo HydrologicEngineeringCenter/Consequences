@@ -344,6 +344,11 @@ object Deploy_PushNuGets : BuildType({
 
     vcs {
         root(Repo)
+
+        branchFilter = """
+            +:<default>
+            +:v*
+        """.trimIndent()
     }
 
     steps {
@@ -436,7 +441,6 @@ object Endpoints_PRReview : BuildType({
     name = "PR Review"
     description = "Pull requests: full build/sign/pack chain as a gate, with no publish."
 
-    type = BuildTypeSettings.Type.DEPLOYMENT
     buildNumberPattern = "%Version%"
 
     params {
@@ -475,6 +479,10 @@ object Endpoints_Release : BuildType({
 
     vcs {
         root(Repo)
+
+        branchFilter = """
+            +:v*
+        """.trimIndent()
     }
 
     triggers {
@@ -505,6 +513,10 @@ object Endpoints_Snapshot : BuildType({
 
     vcs {
         root(Repo)
+
+        branchFilter = """
+            +:<default>
+        """.trimIndent()
     }
 
     triggers {
