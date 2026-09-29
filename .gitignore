@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# TeamCity Kotlin DSL local compile output (mvn teamcity-configs:generate)
+.teamcity/target/
