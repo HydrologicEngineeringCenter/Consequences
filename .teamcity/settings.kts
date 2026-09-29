@@ -1,4 +1,6 @@
 import jetbrains.buildServer.configs.kotlin.*
+import jetbrains.buildServer.configs.kotlin.buildFeatures.PullRequests
+import jetbrains.buildServer.configs.kotlin.buildFeatures.pullRequests
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetBuild
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetPack
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetTest
@@ -91,6 +93,8 @@ object SetVersion : BuildType({
         }
     }
 
+    TrustedPullRequests.attach(this)
+
     requirements {
         contains("teamcity.agent.name", "windows")
         exists("DotNetCoreSDK9.0_Path")
@@ -136,12 +140,36 @@ object Repo : GitVcsRoot({
     branch = "main"
     branchSpec = """
         +:refs/heads/(main)
-        +:refs/pull/(*/merge)
         +:refs/tags/(v*)
     """.trimIndent()
     useTagsAsBranches = true
     userForTags = "TeamCity <noreply@hecdev.net>"
 })
+
+/*
+Pull request branches are deliberately NOT in the Repo branch spec. A public repo
+means anyone can open a PR from a fork, and a branch-spec pattern would build that
+code unconditionally. The Pull Requests build feature instead surfaces PR branches
+only for authors who are members or collaborators of the organization. It has to be
+attached to every configuration in the PR chain that checks out Repo, otherwise the
+snapshot dependencies cannot resolve the PR branch and silently fall back to main.
+
+authType = vcsRoot() reuses the Repo root's credentials for the GitHub API. Repo
+currently fetches anonymously, which the feature does not support, so Repo needs a
+token (authMethod = password { ... "credentialsJSON:<token>" }) before this works.
+*/
+object TrustedPullRequests {
+    fun attach(buildType: BuildType) = buildType.features {
+        pullRequests {
+            vcsRootExtId = "${Repo.id}"
+            provider = github {
+                authType = vcsRoot()
+                filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER_OR_COLLABORATOR
+                filterTargetBranch = "+:refs/heads/main"
+            }
+        }
+    }
+}
 
 
 object Build : Project({
@@ -185,6 +213,8 @@ object Build_Compile : BuildType({
             onDependencyFailure = FailureAction.FAIL_TO_START
         }
     }
+
+    TrustedPullRequests.attach(this)
 
     requirements {
         contains("teamcity.agent.name", "windows")
@@ -316,6 +346,8 @@ object Build_Test : BuildType({
         }
     }
 
+    TrustedPullRequests.attach(this)
+
     requirements {
         contains("teamcity.agent.name", "windows")
         exists("DotNetCoreSDK9.0_Path")
@@ -331,7 +363,7 @@ object Deploy : Project({
 
 object Deploy_PushNuGets : BuildType({
     name = "Push NuGets"
-    description = "Pushes both packages to the consequences-nuget-public Nexus feed using the NEXUS credentials inherited from the Consequences project."
+    description = "Pushes both packages to the consequences-nuget-public Nexus feed using Nexus credentials scoped to this configuration."
 
     type = BuildTypeSettings.Type.DEPLOYMENT
     buildNumberPattern = "%Version%"
@@ -340,6 +372,12 @@ object Deploy_PushNuGets : BuildType({
         param("nuget.source", "https://www.hec.usace.army.mil/nexus/repository/consequences-nuget-public/")
         param("Version", "${Build_Pack.depParamRefs["Version"]}")
         param("feed.name", "consequences-nuget-public")
+        // Nexus credentials live here, on the one configuration that pushes, rather than on
+        // the parent project where every build (including ones running PR code) would inherit
+        // them into its environment. The token resolves to a secure value stored on the
+        // server for this project; the secret itself is never in the repository.
+        param("env.NEXUS_USER", "bbeam")
+        password("env.NEXUS_PASSWORD", "credentialsJSON:93766cea-6722-458b-933b-d40045f7ff10")
     }
 
     vcs {
@@ -439,12 +477,12 @@ object Endpoints : Project({
 
 object Endpoints_PRReview : BuildType({
     name = "PR Review"
-    description = "Pull requests: full build/sign/pack chain as a gate, with no publish."
+    description = "Pull requests: compile and test as a gate. Deliberately stops short of Sign Binaries and Pack so nothing that has not merged is ever signed with the organization certificate."
 
     buildNumberPattern = "%Version%"
 
     params {
-        param("Version", "${Build_Pack.depParamRefs["Version"]}")
+        param("Version", "${Build_Test.depParamRefs["Version"]}")
     }
 
     vcs {
@@ -458,8 +496,14 @@ object Endpoints_PRReview : BuildType({
         }
     }
 
+    TrustedPullRequests.attach(this)
+
     dependencies {
-        snapshot(Build_Pack) {
+        snapshot(Build_Compile) {
+            reuseBuilds = ReuseBuilds.NO
+            onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+        snapshot(Build_Test) {
             reuseBuilds = ReuseBuilds.NO
             onDependencyFailure = FailureAction.FAIL_TO_START
         }
