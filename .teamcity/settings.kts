@@ -144,6 +144,15 @@ object Repo : GitVcsRoot({
     """.trimIndent()
     useTagsAsBranches = true
     userForTags = "TeamCity <noreply@hecdev.net>"
+    // A GitHub personal access token, stored on the server as a secure value; the
+    // credentialsJSON string is an opaque reference, not the token. The Pull Requests
+    // feature below reuses it for the GitHub API, and authenticated fetches are not
+    // subject to GitHub's anonymous rate limit. GitHub ignores the username for token
+    // auth over HTTPS; x-access-token is its conventional placeholder.
+    authMethod = password {
+        userName = "x-access-token"
+        password = "credentialsJSON:1cbd844c-ebea-43f3-97a8-f151213f0d59"
+    }
 })
 
 /*
@@ -154,9 +163,8 @@ only for authors who are members or collaborators of the organization. It has to
 attached to every configuration in the PR chain that checks out Repo, otherwise the
 snapshot dependencies cannot resolve the PR branch and silently fall back to main.
 
-authType = vcsRoot() reuses the Repo root's credentials for the GitHub API. Repo
-currently fetches anonymously, which the feature does not support, so Repo needs a
-token (authMethod = password { ... "credentialsJSON:<token>" }) before this works.
+authType = vcsRoot() reuses the Repo root's token for the GitHub API, so there is a
+single GitHub credential to rotate.
 */
 object TrustedPullRequests {
     fun attach(buildType: BuildType) = buildType.features {
