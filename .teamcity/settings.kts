@@ -5,6 +5,8 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetBuild
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetPack
 import jetbrains.buildServer.configs.kotlin.buildSteps.dotnetTest
 import jetbrains.buildServer.configs.kotlin.buildSteps.powerShell
+import jetbrains.buildServer.configs.kotlin.projectFeatures.UntrustedBuildsSettings
+import jetbrains.buildServer.configs.kotlin.projectFeatures.untrustedBuildsSettings
 import jetbrains.buildServer.configs.kotlin.vcs.GitVcsRoot
 
 /*
@@ -29,7 +31,7 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2026.1"
+version = "2026.2"
 
 project {
 
@@ -40,6 +42,24 @@ project {
 
     params {
         param("VersionBase", "0.1.0")
+    }
+
+    features {
+        // Pull requests whose author is not a member of the organization are "untrusted".
+        // The Pull Requests feature already limits PR discovery to members and
+        // collaborators; this gate covers the collaborator case (and anything GitHub
+        // classifies as external) by holding the build until a TeamCity user approves
+        // it, instead of running foreign code against the org's secure parameters.
+        // Inherited by the Build, Deploy and Endpoints subprojects.
+        untrustedBuildsSettings {
+            id = "PROJECT_EXT_UNTRUSTED_BUILDS"
+            defaultAction = UntrustedBuildsSettings.DefaultAction.APPROVE
+            // Any authenticated TeamCity user may approve; the server is internal.
+            approvalRules = "group:ALL_USERS_GROUP"
+            // A build a TeamCity user starts by hand is treated as already approved.
+            manualRunsApproved = true
+            enableLog = true
+        }
     }
 
     subProject(Deploy)
@@ -161,6 +181,8 @@ code unconditionally. The Pull Requests build feature instead surfaces PR branch
 only for authors who are members or collaborators of the organization. It has to be
 attached to every configuration in the PR chain that checks out Repo, otherwise the
 snapshot dependencies cannot resolve the PR branch and silently fall back to main.
+Builds from authors TeamCity does not consider organization members additionally wait
+for approval; see untrustedBuildsSettings on the root project.
 
 authType = vcsRoot() reuses the Repo root's token for the GitHub API, so there is a
 single GitHub credential to rotate.
