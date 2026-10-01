@@ -55,7 +55,7 @@ project {
             id = "PROJECT_EXT_UNTRUSTED_BUILDS"
             defaultAction = UntrustedBuildsSettings.DefaultAction.APPROVE
             // Any authenticated TeamCity user may approve; the server is internal.
-            approvalRules = "group:ALL_USERS_GROUP"
+            approvalRules = "group:ALL_USERS_GROUP:1"
             // A build a TeamCity user starts by hand is treated as already approved.
             manualRunsApproved = true
             enableLog = true
