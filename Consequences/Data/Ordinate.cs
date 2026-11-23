@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 //using Numerics.Distributions;
 
@@ -37,8 +38,6 @@ namespace Numerics.Data
         {
             X = xValue;
             Y = yValue;
-            IsValid = true;
-            if (double.IsInfinity(X) || double.IsNaN(X) || double.IsInfinity(Y) || double.IsNaN(Y)) { IsValid = false; }
         }
 
 
@@ -55,8 +54,6 @@ namespace Numerics.Data
             if (yAttribute != null) double.TryParse(yAttribute.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out y);
             X = x;
             Y = y;
-            IsValid = true;
-            if (double.IsInfinity(X) || double.IsNaN(X) || double.IsInfinity(Y) || double.IsNaN(Y)) { IsValid = false; }
 
         }
         #endregion
@@ -66,22 +63,25 @@ namespace Numerics.Data
         /// <summary>
         /// X Value.
         /// </summary>
+        [JsonInclude, JsonPropertyName("X"), JsonRequired]
         public double X;
 
         /// <summary>
         /// Y Value.
         /// </summary>
+        [JsonInclude, JsonPropertyName("Y"), JsonRequired]
         public double Y;
 
         /// <summary>
         /// Boolean indicating if the ordinate has valid numeric values or not.
         /// </summary>
-        public bool IsValid;
+        [JsonIgnore]
+        public bool IsValid => double.IsFinite(X) && double.IsFinite(Y);
 
         #endregion
 
         #region Methods
-       
+
         /// <summary>
         /// Test if the ordinate is valid given monotonic criteria with the next/previous ordinate in a series.
         /// </summary>
