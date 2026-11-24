@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 //using Numerics.Distributions;
 
 namespace Numerics.Data
@@ -37,8 +38,6 @@ namespace Numerics.Data
         {
             X = xValue;
             Y = yValue;
-            IsValid = true;
-            if (double.IsInfinity(X) || double.IsNaN(X) || double.IsInfinity(Y) || double.IsNaN(Y)) { IsValid = false; }
         }
 
 
@@ -55,8 +54,6 @@ namespace Numerics.Data
             if (yAttribute != null) double.TryParse(yAttribute.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out y);
             X = x;
             Y = y;
-            IsValid = true;
-            if (double.IsInfinity(X) || double.IsNaN(X) || double.IsInfinity(Y) || double.IsNaN(Y)) { IsValid = false; }
 
         }
         #endregion
@@ -66,17 +63,20 @@ namespace Numerics.Data
         /// <summary>
         /// X Value.
         /// </summary>
+        [XmlAttribute("X")]
         public double X;
 
         /// <summary>
         /// Y Value.
         /// </summary>
+        [XmlAttribute("Y")]
         public double Y;
 
         /// <summary>
         /// Boolean indicating if the ordinate has valid numeric values or not.
         /// </summary>
-        public bool IsValid;
+        [XmlIgnore]
+        public bool IsValid => double.IsFinite(X) && double.IsFinite(Y);
 
         #endregion
 

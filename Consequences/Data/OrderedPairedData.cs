@@ -1,10 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
 using System.Linq;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace Numerics.Data
 {
@@ -24,23 +24,27 @@ namespace Numerics.Data
     /// </para>
     /// </remarks> 
     [Serializable]
-    public class OrderedPairedData : IList<Ordinate>, INotifyCollectionChanged
+    [XmlRoot("OrderedPairedData")]
+    public class OrderedPairedData : INotifyCollectionChanged
     {
         #region Search Properties
 
         /// <summary>
         /// Keeps track of the starting search location for x-values. 
         /// </summary>
+        [XmlIgnore]
         public int XSearchStart { get; set; }
 
         /// <summary>
         /// Keeps track of the starting search location for y-values. 
         /// </summary>
+        [XmlIgnore]
         public int YSearchStart { get; set; }
 
         /// <summary>
         /// Determines whether to use a smart searching algorithm or just sequential search.
         /// </summary>
+        [XmlIgnore]
         public bool UseSmartSearch { get; set; } = true;
 
         /// <summary>
@@ -86,23 +90,41 @@ namespace Numerics.Data
         /// This avoids firing an event for every individual mutation.
         /// </para>
         /// </remarks>
+        [XmlIgnore]
         public bool SuppressCollectionChanged { get; set; } = false;
 
         /// <summary>
         /// Represents if the paired dataset has valid ordinates and order.
         /// </summary>
         /// <returns>boolean representing data validity.</returns>
+        [XmlIgnore]
         public bool IsValid { get; private set; }
 
         /// <summary>
         /// Number of ordinates in the dataset.
         /// </summary>
         /// <returns>Integer representing the number of ordinates.</returns>
+        [XmlIgnore]
         public int Count => _ordinates.Count;
+
+        /// <summary>
+        /// Gets a copy of the ordinates or replaces them and recalculates validity.
+        /// </summary>
+        [XmlArray("Ordinates"), XmlArrayItem("Ordinate")]
+        public Ordinate[] Ordinates
+        {
+            get => _ordinates.ToArray();
+            set
+            {
+                _ordinates = new List<Ordinate>(value);
+                Validate();
+            }
+        }
 
         /// <summary>
         /// Determines whether the sort order is strict on the X variable. 
         /// </summary>
+        [XmlAttribute("StrictX")]
         public bool StrictX
         {
             get { return _strictX; }
@@ -119,6 +141,7 @@ namespace Numerics.Data
         /// <summary>
         /// Determines whether the sort order is strict on the Y variable. 
         /// </summary>
+        [XmlAttribute("StrictY")]
         public bool StrictY
         {
             get { return _strictY; }
@@ -135,6 +158,7 @@ namespace Numerics.Data
         /// <summary>
         /// Gets or sets the sort order of the X variable. 
         /// </summary>
+        [XmlAttribute("OrderX")]
         public SortOrder OrderX
         {
             get { return _orderX; }
@@ -151,6 +175,7 @@ namespace Numerics.Data
         /// <summary>
         /// Gets or sets the sort order of the Y variable. 
         /// </summary>
+        [XmlAttribute("OrderY")]
         public SortOrder OrderY
         {
             get { return _orderY; }
@@ -164,15 +189,20 @@ namespace Numerics.Data
             }
         }
 
-        /// <summary>
-        /// ReadOnly is an implementation of ICollection and not implemented for this class.
-        /// </summary>
-        /// <returns>Boolean.</returns>
-        bool ICollection<Ordinate>.IsReadOnly => false;
-
         #endregion
 
         #region Construction
+
+        /// <summary>
+        /// Creates an empty curve without ordering constraints.
+        /// </summary>
+        public OrderedPairedData()
+        {
+            _ordinates = new List<Ordinate>();
+            _orderX = SortOrder.None;
+            _orderY = SortOrder.None;
+            Validate();
+        }
 
         /// <summary>
         /// Create empty instance of the ordered paired data class.
@@ -550,15 +580,6 @@ namespace Numerics.Data
         /// </summary>
         /// <returns>An enumerator for the collection.</returns>
         public IEnumerator<Ordinate> GetEnumerator()
-        {
-            return _ordinates.GetEnumerator();
-        }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through the collection.
-        /// </summary>
-        /// <returns>An enumerator for the collection.</returns>
-        IEnumerator IEnumerable.GetEnumerator()
         {
             return _ordinates.GetEnumerator();
         }
