@@ -1,4 +1,5 @@
 using System;
+using System.Xml.Serialization;
 
 namespace Numerics.Data
 {
@@ -17,16 +18,19 @@ namespace Numerics.Data
         /// <summary>
         /// Ascending order.
         /// </summary>
+        [XmlEnum("Ascending")]
         Ascending,
 
         /// <summary>
         /// Descending order.
         /// </summary>
+        [XmlEnum("Descending")]
         Descending,
 
         /// <summary>
         /// Not sorted. 
         /// </summary>
+        [XmlEnum("None")]
         None
     }
 }
